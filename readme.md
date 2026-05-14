@@ -1,3 +1,5 @@
+standby for a better readm elmfoa
+
 **Oomycota** is a fully static, self-hosted music player that runs from a folder of HTML + MP3 files with no server, no accounts, and no ads. It's designed as a personal alternative to SoundCloud that works offline.
 
 **File structure:**
