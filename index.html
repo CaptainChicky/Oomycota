@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f0f0f">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.png">
+  <title>oomycota</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Shared SVG icon sprites -->
+  <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-play" viewBox="0 0 24 24">
+      <path d="M8 5v14l11-7z" />
+    </symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24">
+      <path d="M6 4h4v16H6zm8 0h4v16h-4z" />
+    </symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24">
+      <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
+    </symbol>
+    <symbol id="i-next" viewBox="0 0 24 24">
+      <path d="M16 6h2v12h-2zM4.5 12l8.5 6V6z" transform="scale(-1,1) translate(-24,0)" />
+    </symbol>
+    <symbol id="i-shuf" viewBox="0 0 24 24">
+      <path
+        d="M10.59 9.17 5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
+    </symbol>
+    <symbol id="i-rep" viewBox="0 0 24 24">
+      <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
+    </symbol>
+    <symbol id="i-rep1" viewBox="0 0 24 24">
+      <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z" />
+    </symbol>
+    <symbol id="i-vol" viewBox="0 0 24 24">
+      <path
+        d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+    </symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24">
+      <path
+        d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3z" />
+    </symbol>
+    <symbol id="i-heart-o" viewBox="0 0 24 24">
+      <path
+        d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z" />
+    </symbol>
+    <symbol id="i-dl" viewBox="0 0 24 24">
+      <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+    </symbol>
+    <symbol id="i-queue" viewBox="0 0 24 24">
+      <path
+        d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+    </symbol>
+    <symbol id="i-pnext" viewBox="0 0 24 24">
+      <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+    </symbol>
+    <symbol id="i-qadd" viewBox="0 0 24 24">
+      <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v4h-2v2h2v4h2v-4h4v-2h-4V6h-2z" />
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <path
+        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+    </symbol>
+  </svg>
+
+  <!-- App shell -->
+  <div id="app">
+    <header class="hd">
+      <div class="logo">oomycota</div>
+      <div class="hd-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--muted)">
+          <use href="#i-search" />
+        </svg>
+        <input type="text" placeholder="Search..." oninput="handleSearch(this.value)" id="dsi">
+      </div>
+      <div class="hd-r">
+        <button class="ib mob" onclick="openMobileSearch()"><svg width="14" height="14" viewBox="0 0 24 24"
+            fill="currentColor">
+            <use href="#i-search" />
+          </svg></button>
+        <button class="ib" onclick="cacheCurrentView()" oncontextmenu="event.preventDefault();clearOfflineCache()"
+          id="cBtn" title="Cache for offline (long-press to clear)"><svg width="14" height="14" viewBox="0 0 24 24"
+            fill="currentColor">
+            <use href="#i-dl" />
+          </svg></button>
+      </div>
+    </header>
+    <div class="chips" id="chips"></div>
+    <main class="tracks" id="tracks"></main>
+  </div>
+
+  <!-- Player bar (bottom) -->
+  <div class="bar" id="bar">
+    <div class="bar-prog" id="bp">
+      <div class="bar-fill" id="bf">
+        <div class="bar-dot"></div>
+      </div>
+    </div>
+    <div class="bar-inner">
+      <div class="bar-art" id="ba" onclick="openFullPlayer()"></div>
+      <div class="bar-info" onclick="openFullPlayer()">
+        <div class="bar-title" id="bt">-</div>
+        <div class="bar-sub" id="bs">-</div>
+      </div>
+      <div class="bar-ctrls">
+        <button class="bb sk" onclick="previousTrack()"><svg viewBox="0 0 24 24">
+            <use href="#i-prev" />
+          </svg></button>
+        <button class="bb pp" onclick="togglePlayback()" id="bpp"><svg viewBox="0 0 24 24">
+            <use href="#i-play" />
+          </svg></button>
+        <button class="bb sk" onclick="nextTrack()"><svg viewBox="0 0 24 24">
+            <use href="#i-next" />
+          </svg></button>
+      </div>
+      <div class="bar-time" id="btime">0:00 / 0:00</div>
+      <div class="bar-sec">
+        <button class="ib flat" id="bShuf" onclick="toggleShuffle()"><svg width="14" height="14" viewBox="0 0 24 24"
+            fill="currentColor">
+            <use href="#i-shuf" />
+          </svg></button>
+        <button class="ib flat" id="bRep" onclick="toggleRepeat()"><svg width="14" height="14" viewBox="0 0 24 24"
+            fill="currentColor">
+            <use href="#i-rep" />
+          </svg></button>
+        <button class="ib flat" onclick="openQueue()" id="bQ" title="Queue"><svg width="14" height="14"
+            viewBox="0 0 24 24" fill="currentColor">
+            <use href="#i-queue" />
+          </svg></button>
+      </div>
+      <div class="bar-vol">
+        <button class="ib flat"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <use href="#i-vol" />
+          </svg></button>
+        <input type="range" class="vol-s" min="0" max="100" value="100" oninput="setVolume(this.value)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrim (dim overlay behind queue panel) -->
+  <div class="scrim" id="scrim" onclick="closeQueue()"></div>
+
+  <!-- Queue panel (slides up from bottom) -->
+  <div class="qp" id="qp">
+    <div class="qp-handle"></div>
+    <div class="qp-head">
+      <div class="qp-title">Queue</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="qp-clear" onclick="clearQueue()">Clear</button>
+        <button class="qp-close" onclick="closeQueue()">&times;</button>
+      </div>
+    </div>
+    <div id="qpCtrl"></div>
+    <div class="qp-body" id="qpBody"></div>
+  </div>
+
+  <!-- Full-screen player -->
+  <div class="fp" id="fp">
+    <div class="fp-hd">
+      <button class="fp-x" onclick="closeFullPlayer()">&#8249;</button>
+      <span class="fp-lbl">Now Playing</span>
+      <div style="width:40px"></div>
+    </div>
+    <div class="fp-art">
+      <div class="fp-art-in" id="fpA"></div>
+    </div>
+    <div class="fp-info">
+      <div class="fp-ti" id="fpT">-</div>
+      <div class="fp-ar" id="fpAr">-</div>
+    </div>
+    <div class="fp-prog">
+      <div class="fp-bw" id="fpBW">
+        <div class="fp-b">
+          <div class="fp-bf" id="fpBF">
+            <div class="fp-bd"></div>
+          </div>
+        </div>
+      </div>
+      <div class="fp-tm"><span id="fpC">0:00</span><span id="fpD">0:00</span></div>
+    </div>
+    <div class="fp-ctrls">
+      <button class="fp-b2 sm" id="fShuf" onclick="toggleShuffle()"><svg width="20" height="20" viewBox="0 0 24 24"
+          fill="currentColor">
+          <use href="#i-shuf" />
+        </svg></button>
+      <button class="fp-b2 md" onclick="previousTrack()"><svg viewBox="0 0 24 24">
+          <use href="#i-prev" />
+        </svg></button>
+      <button class="fp-b2 pl" onclick="togglePlayback()" id="fpPP"><svg viewBox="0 0 24 24">
+          <use href="#i-play" />
+        </svg></button>
+      <button class="fp-b2 md" onclick="nextTrack()"><svg viewBox="0 0 24 24">
+          <use href="#i-next" />
+        </svg></button>
+      <button class="fp-b2 sm" id="fRep" onclick="toggleRepeat()"><svg width="20" height="20" viewBox="0 0 24 24"
+          fill="currentColor">
+          <use href="#i-rep" />
+        </svg></button>
+    </div>
+    <div class="fp-extras">
+      <button class="fp-b2 sm" id="fpFav" onclick="if(nowPlaying>=0)toggleFavorite(nowPlaying)" title="Favorite">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <use href="#i-heart-o" />
+        </svg>
+      </button>
+      <button class="fp-b2 sm" onclick="closeFullPlayer();openQueue()" title="Queue">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <use href="#i-queue" />
+        </svg>
+      </button>
+    </div>
+    <div class="fp-vol">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--muted)">
+        <use href="#i-vol" />
+      </svg>
+      <input type="range" min="0" max="100" value="100" oninput="setVolume(this.value)">
+    </div>
+  </div>
+
+  <!-- Context menu (right-click / long-press on a track) -->
+  <div class="ctx" id="ctx">
+    <div class="ctx-i" onclick="contextMenuAction('playNext')"><svg viewBox="0 0 24 24">
+        <use href="#i-pnext" />
+      </svg>Play Next</div>
+    <div class="ctx-i" onclick="contextMenuAction('addToQueue')"><svg viewBox="0 0 24 24">
+        <use href="#i-qadd" />
+      </svg>Add to Queue</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-i" id="ctxFav" onclick="contextMenuAction('favorite')"><svg viewBox="0 0 24 24">
+        <use href="#i-heart-o" />
+      </svg><span id="ctxFavL">Favorite</span></div>
+  </div>
+
+  <!-- Mobile search overlay -->
+  <div class="ms" id="ms">
+    <div class="ms-bar">
+      <input type="text" id="msi" placeholder="Search..." oninput="handleSearch(this.value)">
+      <button onclick="closeMobileSearch()">Cancel</button>
+    </div>
+    <div class="ms-res" id="msr"></div>
+  </div>
+
+  <!-- Toast, cache progress bar, audio element -->
+  <div class="toast" id="toast"></div>
+  <div class="cache-b">
+    <div class="cache-bf" id="cbf"></div>
+  </div>
+  <audio id="au" preload="auto"></audio>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "Oomycota",
+  "short_name": "Oomycota",
+  "description": "Oomycota are filamentous and heterotrophic, and can reproduce both sexually and asexually. Sexual reproduction of an oospore is the result of contact between hyphae of male antheridia and female oogonia.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["music", "entertainment"]
+}
