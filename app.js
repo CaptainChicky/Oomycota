@@ -734,8 +734,8 @@ function renderQueue() {
   // Now-playing controls at the top of the queue panel
   ctrlContainer.innerHTML = `
     <div class="qp-ctrl">
-      <div class="qpc-art">${renderArt(track)}</div>
-      <div class="qpc-info"><div class="qpc-title">${escapeHTML(track.title)}</div><div class="qpc-sub">${escapeHTML(track.artist || 'Unknown')}</div></div>
+      <div class="qpc-art" onclick="closeQueue();openFullPlayer()">${renderArt(track)}</div>
+      <div class="qpc-info" onclick="closeQueue();openFullPlayer()"><div class="qpc-title">${escapeHTML(track.title)}</div><div class="qpc-sub">${escapeHTML(track.artist || 'Unknown')}</div></div>
       <div class="qpc-btns">
         <button class="qpc-btn" onclick="previousTrack()"><svg viewBox="0 0 24 24"><use href="#i-prev"/></svg></button>
         <button class="qpc-btn play" onclick="togglePlayback()" id="qpPlay"><svg viewBox="0 0 24 24"><use href="${playing ? '#i-pause' : '#i-play'}"/></svg></button>
@@ -848,18 +848,30 @@ function updateMediaSession() {
   const track = tracks[nowPlaying];
   if (!track) return;
 
+  // absolute URLs for artwork on iOS
+  const artworkList = [];
+  if (track.art) {
+    const artUrl = new URL(track.art, location.href).href;
+    const mimeType = track.art.endsWith('.png') ? 'image/png' : track.art.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+    artworkList.push({ src: artUrl, sizes: '512x512', type: mimeType });
+  }
+
   navigator.mediaSession.metadata = new MediaMetadata({
     title: track.title,
     artist: track.artist || 'Unknown',
     album: track.album || 'oomycota',
-    artwork: track.art ? [{ src: track.art, sizes: '512x512', type: track.art.endsWith('.png') ? 'image/png' : track.art.endsWith('.webp') ? 'image/webp' : 'image/jpeg' }] : [],
+    artwork: artworkList,
   });
 
-  navigator.mediaSession.setActionHandler('play', () => audio.play());
-  navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+  // Always (re-)register action handlers — iOS can drop them on app resume
+  navigator.mediaSession.setActionHandler('play', () => { audio.play(); playing = true; updatePlayPauseButtons(); });
+  navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); playing = false; updatePlayPauseButtons(); });
   navigator.mediaSession.setActionHandler('previoustrack', previousTrack);
   navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
   navigator.mediaSession.setActionHandler('seekto', d => { audio.currentTime = d.seekTime; updatePositionState(); });
+  // Explicitly clear seekbackward/seekforward so iOS doesn't override prev/next with ±10s
+  try { navigator.mediaSession.setActionHandler('seekbackward', null); } catch {}
+  try { navigator.mediaSession.setActionHandler('seekforward', null); } catch {}
 
   updatePositionState();
 }
@@ -1096,6 +1108,7 @@ function saveState() {
     localStorage.setItem('oo_st', JSON.stringify({
       f: tracks[nowPlaying]?.file,
       p: audio.currentTime || 0,
+      d: audio.duration || tracks[nowPlaying]?.dur || 0,
       v: audio.volume,
       fl: activeFilter,
       un: upNext,
@@ -1153,12 +1166,36 @@ function restoreState() {
         upNext = (state.un || []).filter(i => i < tracks.length);
         history = (state.hi || []).filter(i => i < tracks.length);
         originalQueue = [...upNext];
+
+        // Show saved time in the UI immediately (before metadata loads)
+        const savedPos = state.p || 0;
+        const savedDur = state.d || tracks[idx].dur || 0;
+        if (savedDur) {
+          const pct = (savedPos / savedDur) * 100;
+          $bf.style.width = pct + '%';
+          $fpBF.style.width = pct + '%';
+          $fpC.textContent = formatTime(savedPos);
+          $fpD.textContent = formatTime(savedDur);
+          $btime.textContent = formatTime(savedPos) + ' / ' + formatTime(savedDur);
+        }
+
         audio.src = tracks[idx].file;
+        audio.preload = 'metadata';
+        audio.load(); // Needed on iOS to trigger metadata loading without play
+
         audio.addEventListener('loadedmetadata', function onMeta() {
-          audio.currentTime = state.p || 0;
           audio.removeEventListener('loadedmetadata', onMeta);
+          // Guard: if user already picked a different track, don't touch position
+          if (nowPlaying !== idx) return;
+          if (savedPos > 0) audio.currentTime = savedPos;
+          // Update UI now that we have real duration
+          $fpD.textContent = formatTime(audio.duration);
+          $btime.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration);
+          updateMediaSession();
         });
+
         updatePlayerUI();
+        updateMediaSession(); // Set lock screen metadata + handlers even before metadata loads
       }
     }
   } catch {}
@@ -1173,6 +1210,34 @@ audio.addEventListener('timeupdate', () => {
 });
 audio.addEventListener('pause', saveState);
 window.addEventListener('beforeunload', saveState);
+// iOS PWA: 'pagehide' fires more reliably than 'beforeunload'
+window.addEventListener('pagehide', saveState);
+// iOS PWA: re-sync UI when returning to the app
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && nowPlaying >= 0) {
+    // Re-kick metadata if duration was lost (iOS can purge audio state)
+    if (!audio.duration || !isFinite(audio.duration)) {
+      // Save position before load() resets it; fall back to localStorage
+      let pos = audio.currentTime;
+      if (!pos || !isFinite(pos)) {
+        try {
+          const st = JSON.parse(localStorage.getItem('oo_st') || '{}');
+          pos = st.p || 0;
+        } catch { pos = 0; }
+      }
+      audio.load();
+      audio.addEventListener('loadedmetadata', function onResume() {
+        audio.removeEventListener('loadedmetadata', onResume);
+        if (pos > 0 && isFinite(audio.duration) && pos < audio.duration) {
+          audio.currentTime = pos;
+        }
+        updateMediaSession();
+      });
+    }
+    updatePlayerUI();
+    updateMediaSession();
+  }
+});
 
 
 // --- Keyboard shortcuts ---

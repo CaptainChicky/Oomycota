@@ -544,6 +544,7 @@ button { font-family: inherit }
   overflow: hidden;
   background: var(--surface3);
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .qp-ctrl .qpc-art img { width: 100%; height: 100%; object-fit: cover; display: block }
@@ -559,7 +560,7 @@ button { font-family: inherit }
   color: #fff;
 }
 
-.qp-ctrl .qpc-info { flex: 1; min-width: 0 }
+.qp-ctrl .qpc-info { flex: 1; min-width: 0; cursor: pointer }
 
 .qp-ctrl .qpc-title {
   font-size: 13px;
