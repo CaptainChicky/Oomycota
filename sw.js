@@ -6,7 +6,7 @@ const CACHE_NAME = 'oomycota';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
-  '/icon.PNG',
+  '/icon.png',
   '/tracks.json',
   '/style.css',
   '/app.js',
