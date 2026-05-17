@@ -19,7 +19,6 @@ let seeking = false;
 let contextTrack = -1;    // track index for the open context menu
 
 const audio = document.getElementById('au');
-const durations = {};     // file path -> duration in seconds (filled async)
 const favorites = new Set();
 
 // Restore saved favorites
@@ -61,29 +60,16 @@ async function init() {
   } catch {
     tracks = [];
   }
+  // Pre-compute lowercased search field so handleSearch avoids
+  // re-lowercasing 2k strings on every keystroke
+  tracks.forEach(t => {
+    t._s = (t.title + '\0' + (t.artist || '') + '\0' + (t.album || '')).toLowerCase();
+  });
   renderChips();
   renderTrackList();
-  loadDurations();
   restoreState();
 }
 
-function loadDurations() {
-  tracks.forEach((track, i) => {
-    if (!track.file || durations[track.file]) return;
-    const probe = new Audio();
-    probe.preload = 'metadata';
-    probe.src = track.file;
-    probe.onloadedmetadata = () => {
-      durations[track.file] = probe.duration;
-      // Update any visible duration labels for this file
-      const selector = `.ti-dur[data-f="${CSS.escape(track.file)}"]`;
-      document.querySelectorAll(selector).forEach(el => {
-        el.textContent = formatTime(probe.duration);
-      });
-    };
-    probe.onerror = () => { track._err = true; };
-  });
-}
 
 
 // --- Playlist filter chips ---
@@ -114,10 +100,74 @@ function setFilter(filter) {
 }
 
 
+// --- Virtual scrolling ---
+
+const ROW_H = 77;    // .ti height: 10px pad + 56px art + 10px pad + 1px border
+const VBUF = 8;       // extra rows rendered above/below viewport
+const HIST_MAX = 200; // max history entries kept in memory
+let vState = null;    // { indices, tl, lastStart, lastEnd }
+let vRaf = false;     // requestAnimationFrame guard
+
+function onTrackScroll() {
+  if (!vRaf) {
+    vRaf = true;
+    requestAnimationFrame(() => { vRaf = false; vRenderVisible(); });
+  }
+}
+
+function vRenderVisible() {
+  if (!vState) return;
+  const container = document.getElementById('tracks');
+  const { indices, tl } = vState;
+  const top = container.scrollTop;
+  const h = container.clientHeight;
+
+  let s = Math.max(0, Math.floor(top / ROW_H) - VBUF);
+  let e = Math.min(indices.length, Math.ceil((top + h) / ROW_H) + VBUF);
+
+  if (s === vState.lastStart && e === vState.lastEnd) return;
+  vState.lastStart = s;
+  vState.lastEnd = e;
+
+  let html = '';
+  for (let i = s; i < e; i++) {
+    const idx = indices[i];
+    const track = tracks[idx];
+    if (!track) continue;
+
+    const dur = track.dur ? formatTime(track.dur) : '';
+    const isNP = idx === nowPlaying;
+    const isFav = favorites.has(track.file);
+    const cls = ['ti', isNP ? 'np' : '', track._err ? 'err' : ''].filter(Boolean).join(' ');
+
+    html += `<div class="${cls}" data-i="${idx}" style="position:absolute;top:${i * ROW_H}px;left:0;right:0" onclick="playTrack(${idx})" oncontextmenu="showContextMenu(event,${idx})" ontouchstart="longPressStart(event,${idx})" ontouchend="longPressEnd()" ontouchmove="longPressEnd()">
+      <div class="ti-art">${renderArt(track)}<div class="ov"><svg viewBox="0 0 24 24"><use href="${isNP && playing ? '#i-pause' : '#i-play'}"/></svg></div></div>
+      <div class="ti-info"><div class="ti-title">${escapeHTML(track.title)}</div><div class="ti-sub">${escapeHTML(track.artist || 'Unknown')}${track.album ? ' &middot; ' + escapeHTML(track.album) : ''}</div></div>
+      <div class="ti-r">
+        <button class="ti-fav ${isFav ? 'on' : ''}" onclick="event.stopPropagation();toggleFavorite(${idx})"><svg width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><use href="${isFav ? '#i-heart' : '#i-heart-o'}"/></svg></button>
+        <div class="ti-dur">${dur}</div>
+      </div></div>`;
+  }
+  tl.innerHTML = html;
+}
+
+function vInvalidate() {
+  if (!vState) return;
+  vState.lastStart = -1;
+  vState.lastEnd = -1;
+  vRenderVisible();
+}
+
+
 // --- Track list rendering ---
 
-function renderTrackList() {
+function renderTrackList(preserveScroll) {
   const container = document.getElementById('tracks');
+  const savedScroll = preserveScroll ? container.scrollTop : 0;
+
+  // Tear down previous virtual scroll
+  container.removeEventListener('scroll', onTrackScroll);
+  vState = null;
 
   // Build the list of track indices to show based on the active filter
   let indices;
@@ -138,14 +188,26 @@ function renderTrackList() {
     return;
   }
 
-  container.innerHTML = '<div class="tl">' + indices.map(i => renderTrackItem(i)).join('') + '</div>';
+  // Set up virtual scroll container
+  const tl = document.createElement('div');
+  tl.className = 'tl';
+  tl.style.position = 'relative';
+  tl.style.height = (indices.length * ROW_H) + 'px';
+  container.innerHTML = '';
+  container.appendChild(tl);
+  container.scrollTop = savedScroll;
+
+  vState = { indices, tl, lastStart: -1, lastEnd: -1 };
+  container.addEventListener('scroll', onTrackScroll, { passive: true });
+  vRenderVisible();
 }
 
+// renderTrackItem — used by queue panel & search (non-virtual, small lists)
 function renderTrackItem(idx, opts = {}) {
   const track = tracks[idx];
   if (!track) return '';
 
-  const duration = track.file && durations[track.file] ? formatTime(durations[track.file]) : '';
+  const duration = track.dur ? formatTime(track.dur) : '';
   const isNowPlaying = idx === nowPlaying;
   const isFav = favorites.has(track.file);
 
@@ -168,7 +230,7 @@ function renderTrackItem(idx, opts = {}) {
     <div class="ti-r">
       <button class="ti-fav ${isFav ? 'on' : ''}" onclick="event.stopPropagation();toggleFavorite(${idx})"><svg width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><use href="${isFav ? '#i-heart' : '#i-heart-o'}"/></svg></button>
       ${removeBtn}
-      <div class="ti-dur" data-f="${escapeHTML(track.file || '')}">${duration}</div>
+      <div class="ti-dur">${duration}</div>
     </div></div>`;
 }
 
@@ -262,7 +324,10 @@ function advance() {
     return;
   }
 
-  if (nowPlaying >= 0) history.push(nowPlaying);
+  if (nowPlaying >= 0) {
+    history.push(nowPlaying);
+    if (history.length > HIST_MAX) history = history.slice(-HIST_MAX);
+  }
 
   if (upNext.length) {
     nowPlaying = upNext.shift();
@@ -405,9 +470,30 @@ function toggleFavorite(idx) {
   } catch {}
 
   renderChips();
-  renderTrackList();
+
+  // Detect if search is active (desktop input has text, or mobile overlay is open)
+  const searchActive = document.getElementById('dsi').value.trim() ||
+                        document.getElementById('ms').classList.contains('open');
+
+  if (searchActive) {
+    // Just update the fav button(s) for this track in place
+    updateFavButtons(idx);
+  } else if (activeFilter === 'fav') {
+    renderTrackList();
+  } else {
+    vInvalidate();
+  }
+
   renderQueue();
   updateFullPlayerFavorite();
+}
+
+function updateFavButtons(idx) {
+  const isFav = favorites.has(tracks[idx].file);
+  document.querySelectorAll(`.ti[data-i="${idx}"] .ti-fav`).forEach(btn => {
+    btn.classList.toggle('on', isFav);
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><use href="${isFav ? '#i-heart' : '#i-heart-o'}"/></svg>`;
+  });
 }
 
 function isFavorite(track) {
@@ -465,19 +551,26 @@ function longPressEnd() {
 
 // --- Audio events ---
 
+// Cache frequently-accessed DOM elements (timeupdate fires ~4x/sec)
+const $bf = document.getElementById('bf');
+const $fpBF = document.getElementById('fpBF');
+const $fpC = document.getElementById('fpC');
+const $fpD = document.getElementById('fpD');
+const $btime = document.getElementById('btime');
+
 audio.addEventListener('timeupdate', () => {
   if (!audio.duration || seeking) return;
 
   const progress = (audio.currentTime / audio.duration) * 100;
-  document.getElementById('bf').style.width = progress + '%';
-  document.getElementById('fpBF').style.width = progress + '%';
+  $bf.style.width = progress + '%';
+  $fpBF.style.width = progress + '%';
 
   const queueProgress = document.getElementById('qpProg');
   if (queueProgress) queueProgress.style.width = progress + '%';
 
-  document.getElementById('fpC').textContent = formatTime(audio.currentTime);
-  document.getElementById('fpD').textContent = formatTime(audio.duration);
-  document.getElementById('btime').textContent = formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration);
+  $fpC.textContent = formatTime(audio.currentTime);
+  $fpD.textContent = formatTime(audio.duration);
+  $btime.textContent = formatTime(audio.currentTime) + ' / ' + formatTime(audio.duration);
 
   updatePositionState();
 });
@@ -587,7 +680,12 @@ function updatePlayPauseButtons() {
 }
 
 function updateHighlight() {
-  document.querySelectorAll('.ti').forEach(el => {
+  // Re-render virtual scroll rows (they carry np state inline)
+  vInvalidate();
+  // Re-render queue virtual scroll rows too
+  if (qvState) { qvState.lastStart = -1; qvState.lastEnd = -1; qvRenderVisible(); }
+  // Update any non-virtual .ti elements (capped history, search results)
+  document.querySelectorAll('.qp .ti:not([style*="position"]), .ms .ti, #tracks > .tl > .ti:not([style])').forEach(el => {
     const idx = +el.dataset.i;
     const isActive = idx === nowPlaying;
     el.classList.toggle('np', isActive);
@@ -621,6 +719,10 @@ function renderQueue() {
   const ctrlContainer = document.getElementById('qpCtrl');
   const body = document.getElementById('qpBody');
 
+  // Tear down queue virtual scroll
+  body.removeEventListener('scroll', onQueueScroll);
+  qvState = null;
+
   if (nowPlaying < 0) {
     ctrlContainer.innerHTML = '';
     body.innerHTML = '<div class="empty"><p>Nothing playing yet.</p></div>';
@@ -646,19 +748,18 @@ function renderQueue() {
   let html = '';
 
   if (upNext.length) {
-    html += `<div class="qp-section">Up Next (${upNext.length})</div><div class="tl">`;
-    upNext.forEach((trackIdx, queuePos) => {
-      html += renderTrackItem(trackIdx, {
-        removeIdx: queuePos,
-        onclick: `upNext.splice(0,${queuePos});if(!shuffleOn)originalQueue.splice(0,${queuePos});advance()`,
-      });
-    });
-    html += '</div>';
+    html += `<div class="qp-section">Up Next (${upNext.length})</div>`;
+    html += `<div class="tl qv-tl" style="position:relative;height:${upNext.length * ROW_H}px"></div>`;
   }
 
+  const HIST_CAP = 50;
   if (history.length) {
-    html += `<div class="qp-section">History</div><div class="tl">`;
-    [...history].reverse().forEach(trackIdx => {
+    const shown = history.slice(-HIST_CAP).reverse();
+    const label = history.length > HIST_CAP
+      ? `History (latest ${HIST_CAP} of ${history.length})`
+      : 'History';
+    html += `<div class="qp-section">${label}</div><div class="tl">`;
+    shown.forEach(trackIdx => {
       html += renderTrackItem(trackIdx, { hist: true });
     });
     html += '</div>';
@@ -669,6 +770,67 @@ function renderQueue() {
   }
 
   body.innerHTML = html;
+
+  // Set up virtual scroll for Up Next
+  if (upNext.length) {
+    const tl = body.querySelector('.qv-tl');
+    if (tl) {
+      qvState = { tl, lastStart: -1, lastEnd: -1 };
+      body.addEventListener('scroll', onQueueScroll, { passive: true });
+      qvRenderVisible();
+    }
+  }
+}
+
+// --- Queue virtual scroll ---
+
+let qvState = null;
+let qvRaf = false;
+
+function onQueueScroll() {
+  if (!qvRaf) {
+    qvRaf = true;
+    requestAnimationFrame(() => { qvRaf = false; qvRenderVisible(); });
+  }
+}
+
+function qvRenderVisible() {
+  if (!qvState) return;
+  const body = document.getElementById('qpBody');
+  const { tl } = qvState;
+  const scrollTop = body.scrollTop;
+  const viewH = body.clientHeight;
+  const tlTop = tl.offsetTop;
+
+  const relTop = scrollTop - tlTop;
+  let s = Math.max(0, Math.floor(relTop / ROW_H) - VBUF);
+  let e = Math.min(upNext.length, Math.ceil((relTop + viewH) / ROW_H) + VBUF);
+
+  if (s === qvState.lastStart && e === qvState.lastEnd) return;
+  qvState.lastStart = s;
+  qvState.lastEnd = e;
+
+  let html = '';
+  for (let i = s; i < e; i++) {
+    const trackIdx = upNext[i];
+    const track = tracks[trackIdx];
+    if (!track) continue;
+
+    const dur = track.dur ? formatTime(track.dur) : '';
+    const isNP = trackIdx === nowPlaying;
+    const isFav = favorites.has(track.file);
+    const cls = ['ti', isNP ? 'np' : '', track._err ? 'err' : ''].filter(Boolean).join(' ');
+
+    html += `<div class="${cls}" data-i="${trackIdx}" style="position:absolute;top:${i * ROW_H}px;left:0;right:0" onclick="upNext.splice(0,${i});if(!shuffleOn)originalQueue.splice(0,${i});advance()" oncontextmenu="showContextMenu(event,${trackIdx})" ontouchstart="longPressStart(event,${trackIdx})" ontouchend="longPressEnd()" ontouchmove="longPressEnd()">
+      <div class="ti-art">${renderArt(track)}<div class="ov"><svg viewBox="0 0 24 24"><use href="${isNP && playing ? '#i-pause' : '#i-play'}"/></svg></div></div>
+      <div class="ti-info"><div class="ti-title">${escapeHTML(track.title)}</div><div class="ti-sub">${escapeHTML(track.artist || 'Unknown')}${track.album ? ' &middot; ' + escapeHTML(track.album) : ''}</div></div>
+      <div class="ti-r">
+        <button class="ti-fav ${isFav ? 'on' : ''}" onclick="event.stopPropagation();toggleFavorite(${trackIdx})"><svg width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><use href="${isFav ? '#i-heart' : '#i-heart-o'}"/></svg></button>
+        <button class="ti-rm" onclick="event.stopPropagation();removeFromQueue(${i})">&times;</button>
+        <div class="ti-dur">${dur}</div>
+      </div></div>`;
+  }
+  tl.innerHTML = html;
 }
 
 function clearQueue() {
@@ -767,20 +929,28 @@ function handleSearch(query) {
     return;
   }
 
+  // Desktop search replaces the virtual-scrolled track list
+  if (!isMobile) {
+    target.removeEventListener('scroll', onTrackScroll);
+    vState = null;
+  }
+
   const matches = tracks
     .map((track, i) => [track, i])
-    .filter(([track]) =>
-      track.title.toLowerCase().includes(term) ||
-      (track.artist || '').toLowerCase().includes(term) ||
-      (track.album || '').toLowerCase().includes(term)
-    );
+    .filter(([track]) => track._s.includes(term));
 
   if (!matches.length) {
     target.innerHTML = '<div class="empty"><p>No results</p></div>';
     return;
   }
 
-  target.innerHTML = '<div class="tl">' + matches.map(([_, i]) => renderTrackItem(i)).join('') + '</div>';
+  const SEARCH_CAP = 100;
+  const shown = matches.slice(0, SEARCH_CAP);
+  let html = '<div class="tl">' + shown.map(([_, i]) => renderTrackItem(i)).join('') + '</div>';
+  if (matches.length > SEARCH_CAP) {
+    html += `<div class="empty" style="padding:12px"><p style="font-size:13px;color:var(--sub)">Showing ${SEARCH_CAP} of ${matches.length} results — try a more specific query</p></div>`;
+  }
+  target.innerHTML = html;
 }
 
 
@@ -792,23 +962,23 @@ function formatTime(seconds) {
 }
 
 function escapeHTML(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 
 // --- Offline caching ---
 
 let cacheBusy = false;
+let cacheAbort = false;
 
 async function cacheCurrentView() {
-  if (cacheBusy) return;
+  if (cacheBusy) {
+    // Already caching — tap again to cancel
+    cacheAbort = true;
+    toast('Cancelling...');
+    return;
+  }
   if (!('caches' in window)) { toast('Not available'); return; }
-
-  cacheBusy = true;
-  document.getElementById('cBtn').classList.add('on');
-  const progressBar = document.getElementById('cbf');
 
   // Decide which tracks to cache based on the active filter
   let targetTracks;
@@ -827,6 +997,16 @@ async function cacheCurrentView() {
     label = targetTracks.length + ' tracks from ' + pl.name;
   }
 
+  // Warn before caching a large number of tracks
+  if (targetTracks.length > 50) {
+    if (!confirm(`Cache ${label} for offline?\n\nThis may use a lot of storage. On iOS, consider caching a smaller playlist instead.`)) return;
+  }
+
+  cacheBusy = true;
+  cacheAbort = false;
+  document.getElementById('cBtn').classList.add('on');
+  const progressBar = document.getElementById('cbf');
+
   // Collect all file URLs to cache (audio + artwork)
   const urls = new Set();
   targetTracks.forEach(t => {
@@ -837,10 +1017,11 @@ async function cacheCurrentView() {
 
   const urlList = [...urls];
   let done = 0;
-  toast('Caching ' + label + '...');
+  toast('Caching ' + label + '... (tap again to cancel)');
 
   const cache = await caches.open('oomycota');
   for (const url of urlList) {
+    if (cacheAbort) break;
     try {
       if (!(await cache.match(url))) {
         const response = await fetch(url);
@@ -851,7 +1032,7 @@ async function cacheCurrentView() {
     progressBar.style.width = ((done / urlList.length) * 100) + '%';
   }
 
-  toast('Cached ' + label);
+  toast(cacheAbort ? `Cancelled (${done} of ${urlList.length} cached)` : 'Cached ' + label);
 
   // Show storage usage after a short delay
   if (navigator.storage && navigator.storage.estimate) {

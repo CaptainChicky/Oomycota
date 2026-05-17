@@ -25,6 +25,7 @@ from pathlib import Path
 
 try:
     from mutagen.id3 import ID3
+    from mutagen import File as MutagenFile
     HAS_MUTAGEN = True
 except ImportError:
     HAS_MUTAGEN = False
@@ -34,7 +35,7 @@ except ImportError:
 # Configuration
 # ---------------------------------------------------------------------------
 
-MUSIC_EXTENSIONS = {'.mp3'}
+MUSIC_EXTENSIONS = {'.mp3', '.m4a', '.webm', '.mp4'}
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
 MUSIC_DIR = 'music'
 COVERS_DIR = 'covers'
@@ -87,6 +88,23 @@ def read_id3(filepath):
     except Exception:
         pass
     return info
+
+
+def read_duration(filepath):
+    """Read duration in seconds from an audio file using mutagen.
+
+    Returns the duration rounded to one decimal place, or 0 if
+    mutagen is missing or the file can't be read.
+    """
+    if not HAS_MUTAGEN:
+        return 0
+    try:
+        audio = MutagenFile(filepath)
+        if audio and audio.info:
+            return round(audio.info.length, 1)
+    except Exception:
+        pass
+    return 0
 
 
 def extract_embedded_art(filepath, output_dir):
@@ -185,12 +203,13 @@ def scan_images(root_dir):
 class TrackEntry:
     """A single track with metadata and an optional cover art path."""
 
-    def __init__(self, file='', title='', artist='', album='', art=''):
+    def __init__(self, file='', title='', artist='', album='', art='', dur=0):
         self.file = file
         self.title = title
         self.artist = artist
         self.album = album
         self.art = art
+        self.dur = dur
 
     def to_dict(self):
         d = {'title': self.title, 'artist': self.artist, 'file': self.file}
@@ -198,6 +217,8 @@ class TrackEntry:
             d['album'] = self.album
         if self.art:
             d['art'] = self.art
+        if self.dur:
+            d['dur'] = self.dur
         return d
 
 
@@ -499,11 +520,13 @@ class OomycotaManager(tk.Tk):
                 continue
             full_path = os.path.join(self.root_dir, rel)
             info = read_id3(full_path)
+            dur = read_duration(full_path)
             self.tracks.append(TrackEntry(
                 file=rel,
                 title=info['title'],
                 artist=info['artist'],
                 album=info['album'],
+                dur=dur,
             ))
             added += 1
 
@@ -893,6 +916,7 @@ class OomycotaManager(tk.Tk):
                     artist=t.get('artist', ''),
                     album=t.get('album', ''),
                     art=t.get('art', ''),
+                    dur=t.get('dur', 0),
                 ))
 
         if isinstance(data, dict):
