@@ -852,7 +852,7 @@ function updateMediaSession() {
     title: track.title,
     artist: track.artist || 'Unknown',
     album: track.album || 'oomycota',
-    artwork: track.art ? [{ src: track.art, sizes: '512x512', type: 'image/jpeg' }] : [],
+    artwork: track.art ? [{ src: track.art, sizes: '512x512', type: track.art.endsWith('.png') ? 'image/png' : track.art.endsWith('.webp') ? 'image/webp' : 'image/jpeg' }] : [],
   });
 
   navigator.mediaSession.setActionHandler('play', () => audio.play());
