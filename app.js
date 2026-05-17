@@ -446,7 +446,7 @@ function preloadNext() {
   if (!upNext.length) return;
   const next = tracks[upNext[0]];
   if (next && next.file) {
-    document.getElementById('audioPreload')?.setAttribute('src', next.file);
+    document.getElementById('audioPreload')?.setAttribute('href', next.file);
   }
 }
 
@@ -1057,7 +1057,7 @@ async function clearOfflineCache() {
   // Re-cache just the app shell
   if ('serviceWorker' in navigator) {
     const cache = await caches.open('oomycota');
-    try { await cache.addAll(['/', 'index.html', 'tracks.json']); } catch {}
+    try { await cache.addAll(['./', 'index.html', 'tracks.json']); } catch {}
   }
 }
 
