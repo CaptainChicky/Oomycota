@@ -3,7 +3,16 @@
 
 const CACHE_NAME = 'oomycota';
 
-const PRECACHE_URLS = ['/', '/index.html', '/tracks.json', '/style.css', '/app.js'];
+const PRECACHE_URLS = [
+  '/',
+  '/index.html',
+  '/icon.PNG',
+  '/tracks.json',
+  '/style.css',
+  '/app.js',
+  '/fonts/outfit-latin.woff2',
+  '/fonts/outfit-latin-ext.woff2'
+];
 
 const CACHEABLE_EXTENSIONS = ['.mp3', '.jpg', '.jpeg', '.png', '.webp', '.html', '.css', '.js'];
 
