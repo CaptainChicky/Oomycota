@@ -14,7 +14,7 @@ const PRECACHE_URLS = [
   'fonts/outfit-latin-ext.woff2'
 ];
 
-const CACHEABLE_EXTENSIONS = ['.mp3', '.jpg', '.jpeg', '.png', '.webp', '.html', '.css', '.js'];
+const CACHEABLE_EXTENSIONS = ['.mp3', '.jpg', '.jpeg', '.png', '.webp', '.html', '.css', '.js', '.woff2'];
 
 function isCacheable(pathname) {
   return pathname === '/' || CACHEABLE_EXTENSIONS.some(ext => pathname.endsWith(ext));
