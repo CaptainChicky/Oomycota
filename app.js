@@ -860,8 +860,6 @@ function updateMediaSession() {
   navigator.mediaSession.setActionHandler('previoustrack', previousTrack);
   navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
   navigator.mediaSession.setActionHandler('seekto', d => { audio.currentTime = d.seekTime; updatePositionState(); });
-  navigator.mediaSession.setActionHandler('seekbackward', d => { audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset || 10)); updatePositionState(); });
-  navigator.mediaSession.setActionHandler('seekforward', d => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + (d.seekOffset || 10)); updatePositionState(); });
 
   updatePositionState();
 }
