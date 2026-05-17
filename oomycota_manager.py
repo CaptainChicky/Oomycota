@@ -262,6 +262,12 @@ class OomycotaManager(tk.Tk):
         self.dirty = False  # True when there are unsaved changes
         self._selected_playlist_idx = None
 
+        # Sort state: None = natural order, otherwise (column_id, reverse)
+        self._sort_key = None      # e.g. 'title', 'artist', 'album', 'file'
+        self._sort_reverse = False
+        # Maps display position -> real index in self.tracks (None = unsorted)
+        self._sort_map = None
+
         self._apply_theme()
         self._build_ui()
 
@@ -297,6 +303,9 @@ class OomycotaManager(tk.Tk):
                         foreground=c['accent'])
         style.configure('Title.TLabel',  font=('Helvetica', 14, 'bold'),
                         foreground=c['accent'])
+
+        style.configure('Sort.TLabel', font=('Helvetica', 9),
+                        foreground=c['accent'], background=c['bg'])
 
         style.configure('Treeview', background=c['surface'], foreground=c['text'],
                         fieldbackground=c['surface'], rowheight=28,
@@ -359,6 +368,17 @@ class OomycotaManager(tk.Tk):
         ttk.Button(header, text='🔍 Scan for MP3s',
                    command=self._scan_files).pack(side='right', padx=4)
 
+        # Sort indicator bar
+        sort_bar = ttk.Frame(parent)
+        sort_bar.pack(fill='x', pady=(0, 2))
+        self._sort_label_var = tk.StringVar(value='')
+        self._sort_label = ttk.Label(sort_bar, textvariable=self._sort_label_var,
+                                     style='Sort.TLabel')
+        self._sort_label.pack(side='left')
+        self._unsort_btn = ttk.Button(sort_bar, text='✕ Clear Sort',
+                                      command=self._clear_sort)
+        # Hidden until a sort is active
+
         # Track area: treeview on the left, action buttons on the right
         track_area = ttk.Frame(parent)
         track_area.pack(fill='both', expand=True)
@@ -383,7 +403,10 @@ class OomycotaManager(tk.Tk):
             ('file',   'File',   200),
         ]
         for col_id, heading, width in col_config:
-            self.track_tree.heading(col_id, text=heading)
+            self.track_tree.heading(
+                col_id, text=heading,
+                command=lambda c=col_id: self._toggle_sort(c),
+            )
             self.track_tree.column(col_id, width=width)
 
         scrollbar = ttk.Scrollbar(frame, orient='vertical',
@@ -472,6 +495,89 @@ class OomycotaManager(tk.Tk):
                    command=self._remove_from_playlist).pack(anchor='w')
 
     # -------------------------------------------------------------------
+    # Sorting (temporary, display-only)
+    # -------------------------------------------------------------------
+
+    def _toggle_sort(self, col_id):
+        """Cycle through: ascending -> descending -> unsorted for the given column."""
+        if self._sort_key == col_id:
+            if not self._sort_reverse:
+                # Was ascending -> go descending
+                self._sort_reverse = True
+            else:
+                # Was descending -> clear sort
+                self._clear_sort()
+                return
+        else:
+            self._sort_key = col_id
+            self._sort_reverse = False
+
+        self._apply_sort()
+
+    def _apply_sort(self):
+        """Build _sort_map and refresh the treeview in sorted order."""
+        attr = self._sort_key  # column ids match TrackEntry attrs directly
+
+        indexed = [(i, getattr(self.tracks[i], attr, '').lower())
+                   for i in range(len(self.tracks))]
+        indexed.sort(key=lambda pair: pair[1], reverse=self._sort_reverse)
+        self._sort_map = [real_idx for real_idx, _ in indexed]
+
+        self._refresh_track_tree()
+        self._update_sort_indicator()
+
+    def _clear_sort(self):
+        """Return to the natural (unsorted) track order."""
+        self._sort_key = None
+        self._sort_reverse = False
+        self._sort_map = None
+        self._refresh_track_tree()
+        self._update_sort_indicator()
+
+    def _update_sort_indicator(self):
+        """Update the sort label and show/hide the clear-sort button."""
+        # Column heading labels (base text without arrows)
+        col_headings = {
+            'title': 'Title', 'artist': 'Artist', 'album': 'Album',
+            'art': 'Cover', 'file': 'File',
+        }
+
+        if self._sort_key is None:
+            self._sort_label_var.set('')
+            self._unsort_btn.pack_forget()
+        else:
+            arrow = '▼' if self._sort_reverse else '▲'
+            self._sort_label_var.set(
+                f'Sorted by {self._sort_key} {arrow}  (display only — track order unchanged)')
+            self._unsort_btn.pack(side='left', padx=(8, 0))
+
+        # Update column headings to show sort arrow on the active column
+        for col_id, base_heading in col_headings.items():
+            if col_id == self._sort_key:
+                arrow = ' ▼' if self._sort_reverse else ' ▲'
+                self.track_tree.heading(col_id, text=base_heading + arrow)
+            else:
+                self.track_tree.heading(col_id, text=base_heading)
+
+    def _display_order(self):
+        """Return the list of real track indices in the current display order."""
+        if self._sort_map is not None:
+            return self._sort_map
+        return list(range(len(self.tracks)))
+
+    def _iid_to_real_index(self, iid):
+        """Convert a treeview item id back to the real index in self.tracks.
+
+        Item ids are stored as 'r<real_index>' so they always reference
+        the true position regardless of the current display sort.
+        """
+        return int(iid[1:])
+
+    def _selected_real_indices(self):
+        """Return the real track indices for whatever is selected in the treeview."""
+        return [self._iid_to_real_index(s) for s in self.track_tree.selection()]
+
+    # -------------------------------------------------------------------
     # Directory loading and MP3 scanning
     # -------------------------------------------------------------------
 
@@ -493,6 +599,7 @@ class OomycotaManager(tk.Tk):
             self.playlists = []
 
         self.available_images = scan_images(self.root_dir)
+        self._clear_sort()
         self._refresh_track_tree()
         self._refresh_playlist_list()
 
@@ -531,7 +638,11 @@ class OomycotaManager(tk.Tk):
             added += 1
 
         self.available_images = scan_images(self.root_dir)
-        self._refresh_track_tree()
+        # Re-apply current sort if one is active so new tracks slot in
+        if self._sort_key is not None:
+            self._apply_sort()
+        else:
+            self._refresh_track_tree()
         self.dirty = True
 
         msg = f'Found {added} new track(s).'
@@ -575,9 +686,12 @@ class OomycotaManager(tk.Tk):
 
     def _refresh_track_tree(self):
         self.track_tree.delete(*self.track_tree.get_children())
-        for i, t in enumerate(self.tracks):
+        for real_idx in self._display_order():
+            t = self.tracks[real_idx]
             art_display = os.path.basename(t.art) if t.art else ''
-            self.track_tree.insert('', 'end', iid=str(i),
+            # Use 'r' prefix + real index as the iid so we can always
+            # map back to the true position regardless of sort state
+            self.track_tree.insert('', 'end', iid=f'r{real_idx}',
                                    values=(t.title, t.artist, t.album,
                                            art_display, t.file))
 
@@ -586,7 +700,7 @@ class OomycotaManager(tk.Tk):
         sel = self.track_tree.selection()
         if not sel:
             return
-        idx = int(sel[0])
+        idx = self._iid_to_real_index(sel[0])
         t = self.tracks[idx]
 
         win = tk.Toplevel(self)
@@ -616,7 +730,11 @@ class OomycotaManager(tk.Tk):
         def save():
             for attr, var in fields.items():
                 setattr(t, attr, var.get().strip())
-            self._refresh_track_tree()
+            # Re-sort if a sort is active (edited value may change position)
+            if self._sort_key is not None:
+                self._apply_sort()
+            else:
+                self._refresh_track_tree()
             self._refresh_pl_tracks()
             self.dirty = True
             win.destroy()
@@ -645,7 +763,7 @@ class OomycotaManager(tk.Tk):
             rel = os.path.relpath(path, self.root_dir).replace('\\', '/')
 
         for s in sel:
-            self.tracks[int(s)].art = rel
+            self.tracks[self._iid_to_real_index(s)].art = rel
 
         self._refresh_track_tree()
         self.dirty = True
@@ -663,7 +781,7 @@ class OomycotaManager(tk.Tk):
             return
 
         # Remove from highest index first so earlier indices stay valid
-        indices = sorted([int(s) for s in sel], reverse=True)
+        indices = sorted(self._selected_real_indices(), reverse=True)
         for idx in indices:
             self.tracks.pop(idx)
             # Adjust every playlist's indices to account for the removal
@@ -673,17 +791,32 @@ class OomycotaManager(tk.Tk):
                     for ti in pl.track_indices if ti != idx
                 ]
 
-        self._refresh_track_tree()
+        # Re-apply sort or refresh
+        if self._sort_key is not None:
+            self._apply_sort()
+        else:
+            self._refresh_track_tree()
         self._refresh_playlist_list()
         self._refresh_pl_tracks()
         self.dirty = True
 
     def _move_track(self, direction):
-        """Swap the selected track with its neighbor. direction is -1 (up) or +1 (down)."""
+        """Swap the selected track with its neighbor. direction is -1 (up) or +1 (down).
+
+        Disabled while a sort is active because the display order is temporary.
+        """
+        if self._sort_map is not None:
+            messagebox.showinfo(
+                'Sort Active',
+                'Clear the column sort first to reorder tracks.\n'
+                '(The current sort is display-only.)',
+            )
+            return
+
         sel = self.track_tree.selection()
         if len(sel) != 1:
             return
-        idx = int(sel[0])
+        idx = self._iid_to_real_index(sel[0])
         new_idx = idx + direction
         if new_idx < 0 or new_idx >= len(self.tracks):
             return
@@ -699,8 +832,8 @@ class OomycotaManager(tk.Tk):
             ]
 
         self._refresh_track_tree()
-        self.track_tree.selection_set(str(new_idx))
-        self.track_tree.see(str(new_idx))
+        self.track_tree.selection_set(f'r{new_idx}')
+        self.track_tree.see(f'r{new_idx}')
         self.dirty = True
 
     # -------------------------------------------------------------------
@@ -856,7 +989,7 @@ class OomycotaManager(tk.Tk):
 
         existing = set(pl.track_indices)
         for s in sel:
-            idx = int(s)
+            idx = self._iid_to_real_index(s)
             if idx not in existing:
                 pl.track_indices.append(idx)
                 existing.add(idx)
@@ -929,11 +1062,16 @@ class OomycotaManager(tk.Tk):
                 ))
 
         self._selected_playlist_idx = None
+        self._clear_sort()
         self._refresh_track_tree()
         self._refresh_playlist_list()
 
     def _save_json(self):
-        """Write tracks and playlists to tracks.json in the site root."""
+        """Write tracks and playlists to tracks.json in the site root.
+
+        Always saves in the original (unsorted) track order — the sort
+        is purely visual and never affects the persisted data.
+        """
         if not self.root_dir:
             path = filedialog.asksaveasfilename(
                 title='Save tracks.json',
