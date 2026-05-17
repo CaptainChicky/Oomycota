@@ -20,6 +20,10 @@ root/
   oomycota_manager.py   instead of editing json directly this has a GUi to do it for you
 ```
 
+## Overview
+
+### Python file
+
 So basically since this is fully static, there cant be any backend processing so you gotta process the audio files and playlists yourself manually. i'm using a json to store stuff, and manually editing that is meh, so there's the accompanying tkinter GUi editor python file you can use instead to do everything properly. the entire python GUi should be self explanatory (lets you edit track metadata, reorder tracks, assign cover images, create and manage playlists with emoji icons or cover art, and exports tracks.json to the site root), but in case someone has lower IQ than the status quo (i love you koishi) the main things of note are that:
 1. on the top right, first thing you do is to open a folder. **you have to open ROOT directory folder**, not the actual music folder inside the root. the gui editor specifically looks for a `/music/` subdirectory within the current working directory.
 2. then when you open the folder, you then must click "scan for mp3s" on the top middle of the gui with the magnifying glass icon, and this will populate the list of music with all files in `/music/` that have the extensions: '.mp3', '.m4a', '.webm', '.mp4'
@@ -27,7 +31,9 @@ So basically since this is fully static, there cant be any backend processing so
 
 The python file uses mutagen to read ID3 tags and extract embedded album art, so you need to `pip install mutagen`. That's really the only requirement though so no pip install requirements.txt type shit is needed :p... And i should note its a bit finicky like if you want to reset your tracks.json you either delete it, or like if you wanna reset a specific track you have to delete the entry and then re-load it using the gui.
 
-Here is the overview of the main display page (keep in mind this is a static soundcloud replacement so ive been trying to get it to look/feel as close as possible):
+### Main screen page
+
+keep in mind this is a static soundcloud replacement so ive been trying to get it to look/feel as close as possible
 
 The main screen shows your full track list. Each track displays cover art (or a generated gradient placeholder based on the title), title, artist, album, a favorite button, and duration. Clicking a track starts playback and builds a queue from all visible tracks starting at that position downwards. Playlist selection buttons at the top let you filter the track list: All, Favorites (auto-generated when you have any), and any custom playlists defined in tracks.json. Selecting a chip filters the view and scopes the queue. Playlists show their cover art image if one was assigned through the manager, falling back to the emoji icon. There's a heart button on every track, in the full player, and in the context menu. These are stored in localStorage and persist across sessions, and automatically generate the favorites playlist icon above for selection.
 
@@ -44,3 +50,7 @@ The entire thing should be installable as a standalone app via "Add to Home Scre
 The website saves the current track, playback position, volume, queue state (Up Next + History), shuffle/repeat modes, and active filter to localStorage every 5 seconds and on pause/tab close. When you reopen the page, everything is restored. Doesn't auto-play, just cues up where you left off.
 
 On desktop, we have the following keyboard shortcuts: Space (play/pause), left/right arrows (skip), S (shuffle), R (repeat), Escape (close overlays). Do note this captures the keys fully, so if you're in the page and say want to do a browser shortcut like Ctrl+R, it would trigger the repeat toggle instead and you instead have to manually click the refresh button.
+
+## How you would use yourself
+
+Clone the repo (ideally sparse checkout everything but tracks.json and the music/covers folder since you're gonna be putting your own files in music folder). Then put your assortment of music you want into the music folder, and set everything up by running the python manager. Then once you save `tracks.json` the `index.html` should automatically reflect the changes you made and you can start playing your music with the web player. have fun lol if you want your own online site you can use what I did and do github pages as well 
