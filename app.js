@@ -916,8 +916,9 @@ fullPlayerEl.addEventListener('touchend', event => {
 // --- Search ---
 
 function openMobileSearch() {
+  const input = document.getElementById('msi');
+  input.focus();
   document.getElementById('ms').classList.add('open');
-  setTimeout(() => document.getElementById('msi').focus(), 100);
 }
 
 function closeMobileSearch() {
