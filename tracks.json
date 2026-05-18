@@ -1403,13 +1403,6 @@
       "dur": 267.6
     },
     {
-      "title": "NAE NI💙💙A ORIGINAL SONG",
-      "artist": "You Got NAE'D!",
-      "file": "music/NAE NIGGA.mp3",
-      "art": "covers/bb015c39979b.png",
-      "dur": 258.9
-    },
-    {
       "title": "【多多×祈Inory】《扬旗鸣鼓》女将军×女驸马请你元宵来听戏！唢呐一响，好戏开场！『 戏台仍在，初心不改 』",
       "artist": "Chinoiserie",
       "file": "music/多多 & 祈Inory - 扬旗鸣鼓.mp3",
@@ -1723,12 +1716,12 @@
         193,
         194,
         198,
-        200,
+        199,
+        202,
         203,
         204,
         205,
-        206,
-        207
+        206
       ],
       "art": "covers/f2a253944716.jpg"
     },

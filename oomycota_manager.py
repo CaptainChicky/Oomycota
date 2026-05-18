@@ -365,6 +365,8 @@ class OomycotaManager(tk.Tk):
         ttk.Label(header, text='Tracks', style='Header.TLabel').pack(side='left')
         ttk.Button(header, text='🖼 Extract Art',
                    command=self._extract_all_art).pack(side='right', padx=4)
+        ttk.Button(header, text='🔄 Resync',
+                command=self._resync_tracks).pack(side='right', padx=4)
         ttk.Button(header, text='🔍 Scan for MP3s',
                    command=self._scan_files).pack(side='right', padx=4)
 
@@ -679,6 +681,72 @@ class OomycotaManager(tk.Tk):
         self._refresh_track_tree()
         self.dirty = True
         messagebox.showinfo('Extract Art', f'Extracted cover art for {count} track(s).')
+
+    def _resync_tracks(self):
+            """Remove tracks whose files no longer exist on disk."""
+            if not self.root_dir:
+                messagebox.showwarning('No Folder', 'Open a folder first.')
+                return
+
+            missing = []
+            for i, t in enumerate(self.tracks):
+                full_path = os.path.join(self.root_dir, t.file)
+                if not os.path.exists(full_path):
+                    missing.append(i)
+
+            if not missing:
+                messagebox.showinfo('Resync', 'All tracks still exist on disk. Nothing to remove.')
+                return
+
+            names = '\n'.join(self.tracks[i].title or self.tracks[i].file for i in missing)
+            if not messagebox.askyesno(
+                'Resync',
+                f'{len(missing)} track(s) no longer found on disk:\n\n{names}\n\n'
+                'Remove them from the track list and all playlists?',
+            ):
+                return
+
+            # Collect cover paths from tracks being removed
+            removed_covers = {self.tracks[i].art for i in missing if self.tracks[i].art}
+
+            for idx in sorted(missing, reverse=True):
+                self.tracks.pop(idx)
+                for pl in self.playlists:
+                    pl.track_indices = [
+                        ti if ti < idx else ti - 1
+                        for ti in pl.track_indices if ti != idx
+                    ]
+
+            # Figure out which covers are still in use by remaining tracks or playlists
+            still_used = {t.art for t in self.tracks if t.art}
+            still_used.update(pl.art for pl in self.playlists if pl.art)
+
+            # Delete orphaned cover files
+            orphaned = removed_covers - still_used
+            deleted_covers = 0
+            for art_rel in orphaned:
+                art_path = os.path.join(self.root_dir, art_rel)
+                if os.path.exists(art_path):
+                    try:
+                        os.remove(art_path)
+                        deleted_covers += 1
+                    except Exception:
+                        pass
+
+            self.available_images = scan_images(self.root_dir)
+
+            if self._sort_key is not None:
+                self._apply_sort()
+            else:
+                self._refresh_track_tree()
+            self._refresh_playlist_list()
+            self._refresh_pl_tracks()
+            self.dirty = True
+
+            msg = f'Removed {len(missing)} missing track(s).'
+            if deleted_covers:
+                msg += f'\nDeleted {deleted_covers} orphaned cover image(s).'
+            messagebox.showinfo('Resync', msg)
 
     # -------------------------------------------------------------------
     # Track tree: display, editing, reordering, deletion
