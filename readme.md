@@ -51,6 +51,35 @@ The website saves the current track, playback position, volume, queue state (Up 
 
 On desktop, we have the following keyboard shortcuts: Space (play/pause), left/right arrows (skip), S (shuffle), R (repeat), Escape (close overlays). Do note this captures the keys fully, so if you're in the page and say want to do a browser shortcut like Ctrl+R, it would trigger the repeat toggle instead and you instead have to manually click the refresh button.
 
+## How to get the audio?
+
+youtube-dl as of rn in 2026 is quite dead, switch to yt-dlp. with yt-dlp you need the deno setup etc etc should be pretty standard and you can download all via npm.
+
+For a single track you can open a commandline (cmd) and just do 
+```batchfile
+yt-dlp -x --audio-format mp3 --audio-quality 0 --embed-thumbnail --add-metadata "link"
+```
+
+For multiple tracks at the same time, I recommend listing them out in a text file (like `list.txt`) like this
+```text
+https://www.youtube.com/watch?v=b8Zq2pbMLwg
+https://www.youtube.com/watch?v=U_UryFjKUsM
+https://www.youtube.com/watch?v=S31M8BqPvx4
+...etc
+```
+and then running
+```batchfile
+for /f "delims=" %u in (list.txt) do yt-dlp -x --audio-format mp3 --audio-quality 0 --embed-thumbnail --add-metadata "%u"
+```
+if you're putting it in a batchfile, you need to double the %
+```batchfile
+for /f "delims=" %%u in (list.txt) do yt-dlp -x --audio-format mp3 --audio-quality 0 --embed-thumbnail --add-metadata "%%u"
+```
+
+if youre on anything other than windows erm figure it out yourself its not that hard lol
+
+I recommend sysematically renaming all of your downloaded files to some format so its easier to sort and figure out what is what btw
+
 ## How you would use yourself
 
 Clone the repo (ideally sparse checkout everything but tracks.json and the music/covers folder since you're gonna be putting your own files in music folder). Then put your assortment of music you want into the music folder, and set everything up by running the python manager. Then once you save `tracks.json` the `index.html` should automatically reflect the changes you made and you can start playing your music with the web player. have fun lol if you want your own online site you can use what I did and do github pages as well 

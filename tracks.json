@@ -957,6 +957,515 @@
       "file": "music/蒋雪儿 - 燕无歇.mp3",
       "art": "covers/a237e8876ae6.png",
       "dur": 201.5
+    },
+    {
+      "title": "Boom Kitty x Teminite - Heave Ho",
+      "artist": "Boom Kitty",
+      "file": "music/Boom Kitty x Teminite - Heave Ho.mp3",
+      "art": "covers/86f88b327cd1.png",
+      "dur": 253.5
+    },
+    {
+      "title": "David Vitas ft. Elsie Lovelock - Lullaby of the Moon [Lyrics - Emotional Female Vocal]",
+      "artist": "Pandora Journey",
+      "file": "music/David Vitas ft. Elsie Lovelock - Lullaby of the Moon.mp3",
+      "art": "covers/29bab57bba3d.png",
+      "dur": 227.4
+    },
+    {
+      "title": "Eta Carnis",
+      "artist": "Somanylynx",
+      "file": "music/Eta Carnis.mp3",
+      "album": "Raytrax, Vol. 6: Mayonaka Curse",
+      "art": "covers/19cd77a86f52.png",
+      "dur": 273.8
+    },
+    {
+      "title": "GUINES - 死の化粧室",
+      "artist": "nachingel",
+      "file": "music/GUINES - 死の化粧室.mp3",
+      "art": "covers/134a9ed538b4.png",
+      "dur": 433.1
+    },
+    {
+      "title": "Nightcore - Gods Of War [HD]",
+      "artist": "ULmadM5",
+      "file": "music/Gods of War (Nightcore).mp3",
+      "art": "covers/c14afb19e8fc.png",
+      "dur": 363.8
+    },
+    {
+      "title": "Dernière danse 【Nightcore】Indila",
+      "artist": "emma black",
+      "file": "music/Indila - Dernière Danse (Nightcore).mp3",
+      "art": "covers/8354327a37c1.png",
+      "dur": 178.6
+    },
+    {
+      "title": "Kina no Kaori ～ Ai no Shiren (English Sub)  (NOT COPYRIGHT)",
+      "artist": "CrisN8",
+      "file": "music/Kina no Kaori - Ai no Shiren.mp3",
+      "art": "covers/335e0d38b55d.jpg",
+      "dur": 276.6
+    },
+    {
+      "title": "Lilfy - Masteregalia",
+      "artist": "nachingel",
+      "file": "music/Lilfy - Masteregalia.mp3",
+      "art": "covers/7d3d179b9cf0.png",
+      "dur": 277.7
+    },
+    {
+      "title": "༼ Nightcore ༽ ➦ Lullaby of the Moon",
+      "artist": "NightcorePenguin",
+      "file": "music/Lullaby of the Moon (Nightcore).mp3",
+      "art": "covers/8031eb85a9ef.png",
+      "dur": 198.0
+    },
+    {
+      "title": "償還",
+      "artist": "Noah",
+      "file": "music/Noah - 償還.mp3",
+      "album": "Redemption",
+      "art": "covers/670f59efeacf.png",
+      "dur": 706.4
+    },
+    {
+      "title": "冥月 - 迷子の森",
+      "artist": "nachingel",
+      "file": "music/冥月 - 迷子の森.mp3",
+      "art": "covers/83f6d76073de.png",
+      "dur": 248.4
+    },
+    {
+      "title": "（Arknights Scarty Doujin music）涌潮悲歌 Original language songs",
+      "artist": "atoroeato ",
+      "file": "music/涌潮悲歌 (Arknights Scarty Doujin Music).mp3",
+      "art": "covers/99a737bd8168.png",
+      "dur": 211.8
+    },
+    {
+      "title": "ATAS! - Soviet Militia Song",
+      "artist": "Templar",
+      "file": "music/ATAS! - Soviet Militia Song.mp3",
+      "art": "covers/b7662d26f806.png",
+      "dur": 195.1
+    },
+    {
+      "title": "[Nightcore] Amur Waves - Амурские волны",
+      "artist": "Pakhmutovets",
+      "file": "music/Amur Waves (Nightcore).mp3",
+      "art": "covers/ee62f66fdc6e.png",
+      "dur": 180.1
+    },
+    {
+      "title": "[Nightcore] Comrade Song - Товарищ песня",
+      "artist": "Pakhmutovets",
+      "file": "music/Comrade Song (Nightcore).mp3",
+      "art": "covers/da8abf2b528a.png",
+      "dur": 168.2
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Dark Is the Night - Тёмная ночь",
+      "artist": "Pakhmutovets",
+      "file": "music/Dark Is the Night (Nightcore).mp3",
+      "art": "covers/919009faef65.png",
+      "dur": 224.0
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Do the Russians Want War? - Хотят ли Русские войны?",
+      "artist": "Pakhmutovets",
+      "file": "music/Do the Russians Want War (Nightcore).mp3",
+      "art": "covers/eb4543dc3468.png",
+      "dur": 154.8
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] I Love You, Russia - Я люблю тебя, Россия",
+      "artist": "Pakhmutovets",
+      "file": "music/I Love You, Russia (Nightcore).mp3",
+      "art": "covers/61247d1d5229.png",
+      "dur": 169.0
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] In the Forest, Near the Frontline - В лесу прифронтовом",
+      "artist": "Pakhmutovets",
+      "file": "music/In the Forest, Near the Frontline (Nightcore).mp3",
+      "art": "covers/aefdd719b690.png",
+      "dur": 185.0
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Love is a Circle - Любовь-кольцо",
+      "artist": "Pakhmutovets",
+      "file": "music/Love is a Circle (Nightcore).mp3",
+      "art": "covers/aca58a40059e.png",
+      "dur": 134.3
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] March of the Artillerymen - Марш артиллеристов",
+      "artist": "Pakhmutovets",
+      "file": "music/March of the Artillerymen (Nightcore).mp3",
+      "art": "covers/c6453fbe0e72.png",
+      "dur": 103.7
+    },
+    {
+      "title": "Nightcore - May Waltz (Майский вальс)",
+      "artist": "Hermos Flutter",
+      "file": "music/May Waltz (Nightcore).mp3",
+      "art": "covers/983b348866ad.png",
+      "dur": 217.8
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Moscow Nights - Подмосковные вечера",
+      "artist": "Pakhmutovets",
+      "file": "music/Moscow Nights (Nightcore).mp3",
+      "art": "covers/e7d31c1b81c2.png",
+      "dur": 178.1
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] My Adress is the Soviet Union - Мой адрес Советский Союз",
+      "artist": "Pakhmutovets",
+      "file": "music/My Address is the Soviet Union (Nightcore).mp3",
+      "art": "covers/45b280c3bc31.png",
+      "dur": 141.6
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] My Soldier's Song - Песня солдатская моя",
+      "artist": "Pakhmutovets",
+      "file": "music/My Soldier's Song (Nightcore).mp3",
+      "art": "covers/87f50c16e6a0.png",
+      "dur": 179.3
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Old Maple - Старый клён",
+      "artist": "Pakhmutovets",
+      "file": "music/Old Maple (Nightcore).mp3",
+      "art": "covers/10837deff862.png",
+      "dur": 167.6
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Peace Street - Улица мира",
+      "artist": "Pakhmutovets",
+      "file": "music/Peace Street (Nightcore).mp3",
+      "art": "covers/967d64ef5d23.png",
+      "dur": 192.2
+    },
+    {
+      "title": "Russian Airborne Troops (VDV)  Music Video",
+      "artist": "terauchi999",
+      "file": "music/Russian Airborne Troops (VDV).mp3",
+      "art": "covers/c494fe4c8a5b.jpg",
+      "dur": 187.3
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] The Bird of Happiness - Птица счастья",
+      "artist": "Pakhmutovets",
+      "file": "music/The Bird of Happiness (Nightcore).mp3",
+      "art": "covers/b06485f6f863.png",
+      "dur": 147.5
+    },
+    {
+      "title": "[Nightcore] The City That Doesn't Exist - Город которого нет",
+      "artist": "Pakhmutovets",
+      "file": "music/The City That Doesn't Exist (Nightcore).mp3",
+      "art": "covers/00f579cf48c6.png",
+      "dur": 192.1
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] The Cranes - Журавли",
+      "artist": "Pakhmutovets",
+      "file": "music/The Cranes (Nightcore).mp3",
+      "art": "covers/cd9bfb7b28fc.png",
+      "dur": 195.9
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] The Crew is One Family - Экипаж одна семья",
+      "artist": "Pakhmutovets",
+      "file": "music/The Crew is One Family (Nightcore).mp3",
+      "art": "covers/193611874773.png",
+      "dur": 171.4
+    },
+    {
+      "title": "[Nightcore] Varvara - Katyusha",
+      "artist": "Hermos Flutter",
+      "file": "music/Varvara - Катюша (Nightcore).mp3",
+      "art": "covers/2e0ea1056d5d.png",
+      "dur": 162.5
+    },
+    {
+      "title": "[Nightcore] We Can't Live Without Each Other - Нам не жить друг без друга",
+      "artist": "Pakhmutovets",
+      "file": "music/We Can't Live Without Each Other (Nightcore).mp3",
+      "art": "covers/13b582171943.png",
+      "dur": 196.1
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] We Need One Victory - Нам нужна одна победа",
+      "artist": "Pakhmutovets",
+      "file": "music/We Need One Victory (Nightcore).mp3",
+      "art": "covers/e884f9503bad.png",
+      "dur": 132.7
+    },
+    {
+      "title": "Nightcore - Wondrous Future (Прекрасное далёко)",
+      "artist": "Hermos Flutter",
+      "file": "music/Wondrous Future (Nightcore).mp3",
+      "art": "covers/20ddbbb72544.png",
+      "dur": 134.1
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] You Are My Hope - Ты моя надежда",
+      "artist": "Pakhmutovets",
+      "file": "music/You Are My Hope (Nightcore).mp3",
+      "art": "covers/df9f67ff8f4a.png",
+      "dur": 170.1
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Your Honor, Lady Luck - Ваше благородие, госпожа Удача",
+      "artist": "Pakhmutovets",
+      "file": "music/Your Honor, Lady Luck (Nightcore).mp3",
+      "art": "covers/bf1fa1a2bbd8.png",
+      "dur": 133.7
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Birch Juice - Берёзовый сок",
+      "artist": "Pakhmutovets",
+      "file": "music/Берёзовый сок (Nightcore).mp3",
+      "art": "covers/c25ebe1e28a0.png",
+      "dur": 181.5
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Vologda - Вологда",
+      "artist": "Pakhmutovets",
+      "file": "music/Вологда (Nightcore).mp3",
+      "art": "covers/551d967e9c4f.png",
+      "dur": 193.1
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Enemies Burnt The Birth House Down - Враги сожгли родную хату",
+      "artist": "Pakhmutovets",
+      "file": "music/Враги сожгли родную хату (Nightcore).mp3",
+      "art": "covers/fb258c0e76f2.png",
+      "dur": 189.1
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] It's a Long Time We Haven't Been Home - Давно мы дома не были",
+      "artist": "Pakhmutovets",
+      "file": "music/Давно мы дома не были (Nightcore).mp3",
+      "art": "covers/c44c938460ce.png",
+      "dur": 168.5
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Distant Track - Дальняя дорожка",
+      "artist": "Pakhmutovets",
+      "file": "music/Дальняя дорожка (Nightcore).mp3",
+      "art": "covers/d634713db5cc.png",
+      "dur": 138.4
+    },
+    {
+      "title": "[Nightcore] - A soldier is walking through the city [Идет солдат по городу]",
+      "artist": "Samuel Farina",
+      "file": "music/Идет солдат по городу (Nightcore).mp3",
+      "art": "covers/dbeed486150f.png",
+      "dur": 226.3
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Magnitka - Магнитка",
+      "artist": "Pakhmutovets",
+      "file": "music/Магнитка (Nightcore).mp3",
+      "art": "covers/a4b0aaecd1fd.png",
+      "dur": 180.5
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] A Young Sailor Goes On Leave - На побывку едет молодой моряк",
+      "artist": "Pakhmutovets",
+      "file": "music/На побывку едет молодой моряк (Nightcore).mp3",
+      "art": "covers/929335ac19c0.png",
+      "dur": 153.3
+    },
+    {
+      "title": "Не валяй дурака, Америка! (Don't Play the Fool, America!) - Russian Cold War song",
+      "artist": "eyra",
+      "file": "music/Не валяй дурака, Америка!.mp3",
+      "art": "covers/6b0c58f06160.png",
+      "dur": 207.7
+    },
+    {
+      "title": "[Best Soviet Songs Nightcore] Potpourri - Попурри #1",
+      "artist": "Pakhmutovets",
+      "file": "music/Попурри (Nightcore).mp3",
+      "art": "covers/e13c2d764b03.png",
+      "dur": 573.8
+    },
+    {
+      "title": "[Nightcore] Russia, Rus' ! - Россия, Русь!",
+      "artist": "Pakhmutovets",
+      "file": "music/Россия, Русь! (Nightcore).mp3",
+      "art": "covers/5f260535ea1e.png",
+      "dur": 174.8
+    },
+    {
+      "title": "Charlie kirk was shot by me song (@67sussyimpostor)",
+      "artist": "Rip",
+      "file": "music/67sussyimpostor - Charlie Kirk Was Shot by Me.mp3",
+      "art": "covers/8582b45e87ce.png",
+      "dur": 58.4
+    },
+    {
+      "title": "BALLS charlie kirk song (CLASH ROYALE OST)",
+      "artist": "Rip",
+      "file": "music/BALLS - Charlie Kirk Song.mp3",
+      "art": "covers/cbed564d94bc.png",
+      "dur": 44.8
+    },
+    {
+      "title": "Diddy Heil Epstein -  Full Lyric Video (tiktok audio)",
+      "artist": "Vexy, Havexy",
+      "file": "music/Diddy Heil Epstein.mp3",
+      "art": "covers/32d5032ab58b.png",
+      "dur": 202.5
+    },
+    {
+      "title": "Hasan's dih is unstoppable and harder than a rock TUFF NICHE ARABIC PHONK SLOWED AND REVERBED 🌹✌️",
+      "artist": "Keep the flowers lover ",
+      "file": "music/Hasan's Dih is Unstoppable (Slowed and Reverbed).mp3",
+      "art": "covers/99309587e89a.png",
+      "dur": 64.1
+    },
+    {
+      "title": "I Cannot Release It Anymore",
+      "artist": "Fiddle Diddle, WANGAF",
+      "file": "music/I Cannot Release It Anymore.mp3",
+      "album": "I Cannot Release It Anymore",
+      "art": "covers/fb92251b5348.png",
+      "dur": 55.7
+    },
+    {
+      "title": "I wrestle with my chicken (clash royale OST)",
+      "artist": "Rip",
+      "file": "music/I Wrestle with My Chicken.mp3",
+      "art": "covers/04957f71dfbc.png",
+      "dur": 21.2
+    },
+    {
+      "title": "Kim Jung Goon 金正控- Hyperbaiter 【中文歌詞/ENG lyrics】",
+      "artist": "Tunaking鮪魚王",
+      "file": "music/Kim Jung Goon (金正控) - Hyperbaiter.mp3",
+      "art": "covers/c3029eca85fb.png",
+      "dur": 130.1
+    },
+    {
+      "title": "Master Baiter (Hyperbaiter Disstrack)",
+      "artist": "Havexy",
+      "file": "music/Master Baiter.mp3",
+      "art": "covers/0902ef49a074.png",
+      "dur": 171.6
+    },
+    {
+      "title": "P diddle diddle me in my sleep diddyblud song 😂",
+      "artist": "F",
+      "file": "music/P Diddle Diddle Me in My Sleep.mp3",
+      "art": "covers/bfc758e0e528.png",
+      "dur": 31.0
+    },
+    {
+      "title": "the chicken - hyperbaiter (beyondedsanity) (AUDIO PREVIEW) (clash royale audio)",
+      "artist": "Recict",
+      "file": "music/The Chicken - Hyperbaiter.mp3",
+      "art": "covers/fe5f68819424.png",
+      "dur": 46.9
+    },
+    {
+      "title": "We are Charlie Kirk - Chinese Version (我们是查理·柯克)",
+      "artist": "Grand Leader Macron",
+      "file": "music/We Are Charlie Kirk (Chinese Version).mp3",
+      "art": "covers/ffa8d126d5be.png",
+      "dur": 211.0
+    },
+    {
+      "title": "We Are Charlie Kirk (Mandarin Dub) (Nightcore)",
+      "artist": "Jorkin Depeanus Vance",
+      "file": "music/We Are Charlie Kirk (Mandarin Dub, Nightcore).mp3",
+      "art": "covers/b7bf38c39a30.png",
+      "dur": 262.2
+    },
+    {
+      "title": "What's My Name - Official Music Video [REUPLOAD]",
+      "artist": "Havexy",
+      "file": "music/What's My Name.mp3",
+      "art": "covers/a0b0347a70fc.png",
+      "dur": 251.0
+    },
+    {
+      "title": "【hanser/泠鸢yousa/祖娅纳惜/鹿乃ちゃん】吉祥话【2021拜年纪单品】",
+      "artist": "我是人",
+      "file": "music/Hanser, 泠鸢yousa, 祖娅纳惜 & 鹿乃ちゃん - 吉祥话.mp3",
+      "art": "covers/a18b9f4b10d6.png",
+      "dur": 267.6
+    },
+    {
+      "title": "NAE NI💙💙A ORIGINAL SONG",
+      "artist": "You Got NAE'D!",
+      "file": "music/NAE NIGGA.mp3",
+      "art": "covers/bb015c39979b.png",
+      "dur": 258.9
+    },
+    {
+      "title": "【多多×祈Inory】《扬旗鸣鼓》女将军×女驸马请你元宵来听戏！唢呐一响，好戏开场！『 戏台仍在，初心不改 』",
+      "artist": "Chinoiserie",
+      "file": "music/多多 & 祈Inory - 扬旗鸣鼓.mp3",
+      "art": "covers/6865517ca00c.png",
+      "dur": 209.2
+    },
+    {
+      "title": "我的一个道姑朋友",
+      "artist": "以冬",
+      "file": "music/我的一个道姑朋友.mp3",
+      "album": "我的一个道姑朋友",
+      "art": "covers/696966244d29.png",
+      "dur": 314.1
+    },
+    {
+      "title": "昭阳",
+      "artist": "三无Marblue",
+      "file": "music/昭阳.mp3",
+      "album": "昭阳",
+      "art": "covers/3e1d09d8b730.png",
+      "dur": 222.0
+    },
+    {
+      "title": "【拜年紀·川人獨唱】《八珍玉食》泠鳶單人版，川話年味嗆人哈！",
+      "artist": "泠鳶yousa【Unofficial Channel】",
+      "file": "music/泠鳶yousa - 八珍玉食.mp3",
+      "art": "covers/2fef203e87aa.png",
+      "dur": 252.7
+    },
+    {
+      "title": "桃花笑【翻唱 ▪ 泠鳶yousa】",
+      "artist": "泠鳶yousa【Unofficial Channel】",
+      "file": "music/泠鳶yousa - 桃花笑.mp3",
+      "art": "covers/c745e2189672.png",
+      "dur": 195.0
+    },
+    {
+      "title": "【祖娅纳惜】翻唱 谭维维《三体》广播剧最终季主题曲 -《歌者》",
+      "artist": "我是人",
+      "file": "music/祖娅纳惜 - 歌者.mp3",
+      "art": "covers/f01d1e3457cb.png",
+      "dur": 248.2
+    },
+    {
+      "title": "【祖娅纳惜】 麓海为王【他们跟我说，要海妖吟唱！】（阴阳师 铃鹿御前同人曲）",
+      "artist": "我是人",
+      "file": "music/祖娅纳惜 - 麓海为王.mp3",
+      "art": "covers/1be65830cfd5.png",
+      "dur": 210.3
+    },
+    {
+      "title": "邓寓君(等什么君) - 春不晚『姑娘 一句春不晚，痴儿 留在真江南。』【动态歌词MV】",
+      "artist": "彩云音乐",
+      "file": "music/邓寓君 (等什么君) - 春不晚.mp3",
+      "art": "covers/0badec962e83.png",
+      "dur": 213.8
     }
   ],
   "playlists": [
@@ -1038,7 +1547,45 @@
         113,
         104,
         55,
-        27
+        27,
+        140,
+        141,
+        144,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        183,
+        184,
+        196
       ],
       "art": "covers/5b7a281a2320.jpg"
     },
@@ -1148,7 +1695,40 @@
         130,
         131,
         134,
-        135
+        135,
+        136,
+        141,
+        142,
+        144,
+        146,
+        147,
+        148,
+        149,
+        163,
+        168,
+        169,
+        175,
+        178,
+        179,
+        182,
+        183,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        198,
+        200,
+        203,
+        204,
+        205,
+        206,
+        207
       ],
       "art": "covers/f2a253944716.jpg"
     },
@@ -1176,7 +1756,44 @@
         119,
         120,
         121,
-        122
+        122,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184
       ],
       "art": "covers/2ee5e33828a2.png"
     },
@@ -1193,6 +1810,23 @@
         48
       ],
       "art": "covers/d38283ae3441.jpeg"
+    },
+    {
+      "name": "clash royale",
+      "icon": "🔥",
+      "trackIndices": [
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        197
+      ]
     }
   ]
 }
