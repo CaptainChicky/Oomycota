@@ -20,6 +20,13 @@ root/
   oomycota_manager.py   instead of editing json directly this has a GUi to do it for you
 ```
 
+## todo
+
+convert all files into opus to save space (figure out transparency threshold for each ig idk)
+auto compress cover art to some more efficient format, maybe also re-encode the art thats embedded in the mp3 as well, or at least resize since the player doesnt even display larger images so the larger images is impractical
+
+both are additions to the manager perhaps or could be something seperate idk (probably seperate since its cleaner that way)
+
 ## Overview
 
 ### Python file
