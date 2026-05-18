@@ -21,6 +21,12 @@ let contextTrack = -1;    // track index for the open context menu
 const audio = document.getElementById('au');
 const favorites = new Set();
 
+// Artwork blob cache: Map<resolvedArtUrl, blobUrl>
+// Keeps blob URLs alive so the media session can always fetch them.
+// Max 3 entries (current + next + one stale) to avoid memory leaks.
+const _artworkBlobs = new Map();
+const _ARTWORK_CACHE_MAX = 3;
+
 // Restore saved favorites
 try {
   JSON.parse(localStorage.getItem('oo_fav') || '[]').forEach(f => favorites.add(f));
@@ -202,7 +208,7 @@ function renderTrackList(preserveScroll) {
   vRenderVisible();
 }
 
-// renderTrackItem — used by queue panel & search (non-virtual, small lists)
+// renderTrackItem - used by queue panel & search (non-virtual, small lists)
 function renderTrackItem(idx, opts = {}) {
   const track = tracks[idx];
   if (!track) return '';
@@ -290,37 +296,79 @@ function buildQueue(source, position) {
   loadAndPlay();
 }
 
+let playRetryCount = 0;
+const MAX_PLAY_RETRIES = 5;
+let playRetryTimer = null;
+
 function loadAndPlay() {
   const track = tracks[nowPlaying];
   if (!track || !track.file) return;
 
-  if (track._err) {
+  // Clear any pending retry from previous track
+  clearTimeout(playRetryTimer);
+  playRetryCount = 0;
+
+  // Only skip if we've exhausted retries THIS session
+  if (track._err && track._errRetries >= MAX_PLAY_RETRIES) {
     toast('Track unavailable');
     advance();
     return;
   }
 
+  // Update UI immediately so the user sees the track change
+  updatePlayerUI();
+  updateMediaSession();
+
   audio.src = track.file;
+  audio.load();
+  attemptPlay();
+}
+
+function attemptPlay() {
+  const trackIdx = nowPlaying; // capture so retries don't act on wrong track
+
   audio.play()
     .then(() => {
+      if (nowPlaying !== trackIdx) return; // user changed track during load
       playing = true;
+      playRetryCount = 0;
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
       updatePlayerUI();
       updateMediaSession();
       preloadNext();
     })
     .catch(() => {
-      track._err = true;
-      toast('Failed: ' + track.title);
-      updatePlayerUI();
-    });
+      if (nowPlaying !== trackIdx) return;
 
-  updatePlayerUI();
+      playRetryCount++;
+      if (playRetryCount <= MAX_PLAY_RETRIES) {
+        // Retry with exponential backoff (500ms, 1s, 2s, 4s, 8s)
+        const delay = 500 * Math.pow(2, playRetryCount - 1);
+        playRetryTimer = setTimeout(() => {
+          if (nowPlaying !== trackIdx) return;
+          attemptPlay();
+        }, delay);
+      } else {
+        // All retries exhausted - mark and advance
+        const track = tracks[trackIdx];
+        if (track) {
+          track._err = true;
+          track._errRetries = (track._errRetries || 0) + MAX_PLAY_RETRIES;
+        }
+        toast('Failed: ' + tracks[trackIdx]?.title);
+        advance();
+      }
+    });
 }
 
 function advance() {
   if (repeatMode === 2) {
-    audio.currentTime = 0;
-    audio.play();
+    // Repeat one: try simple restart, fall back to full reload if backgrounded
+    try { audio.currentTime = 0; } catch {}
+    audio.play().catch(() => {
+      // If simple replay fails (e.g. background), do full reload
+      loadAndPlay();
+    });
     return;
   }
 
@@ -370,7 +418,11 @@ function togglePlayback() {
     return;
   }
   if (audio.paused) {
-    audio.play();
+    audio.play().catch(() => {
+      // If play fails (e.g. after long background), reload and try
+      audio.load();
+      audio.play().catch(() => {});
+    });
     playing = true;
   } else {
     audio.pause();
@@ -445,8 +497,16 @@ function setVolume(value) {
 function preloadNext() {
   if (!upNext.length) return;
   const next = tracks[upNext[0]];
-  if (next && next.file) {
-    document.getElementById('audioPreload')?.setAttribute('href', next.file);
+  if (!next || !next.file) return;
+
+  // Prefetch the audio file
+  document.getElementById('audioPreload')?.setAttribute('href', next.file);
+
+  // Pre-generate artwork blob for the next track so it's ready instantly on track change
+  const artSrc = next.art || 'icon.png';
+  const artUrl = new URL(artSrc, location.href).href;
+  if (!_artworkBlobs.has(artUrl)) {
+    _generateArtworkBlob(artUrl);
   }
 }
 
@@ -576,13 +636,26 @@ audio.addEventListener('timeupdate', () => {
 });
 
 audio.addEventListener('ended', advance);
-audio.addEventListener('play', () => { playing = true; updatePlayPauseButtons(); updateHighlight(); updateQueuePlayButton(); updateMediaSession(); });
-audio.addEventListener('pause', () => { playing = false; updatePlayPauseButtons(); updateHighlight(); updateQueuePlayButton(); });
+audio.addEventListener('play', () => {
+  playing = true;
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+  updatePlayPauseButtons(); updateHighlight(); updateQueuePlayButton(); updateMediaSession();
+});
+audio.addEventListener('pause', () => {
+  playing = false;
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+  updatePlayPauseButtons(); updateHighlight(); updateQueuePlayButton();
+});
 audio.addEventListener('error', () => {
+  // only track retries here. Do NOT call advance().
+  // attemptPlay()'s catch block is the sole flow controller for retries/advance.
   const track = tracks[nowPlaying];
   if (track) {
-    track._err = true;
-    toast('Failed: ' + track.title);
+    track._errRetries = (track._errRetries || 0) + 1;
+    if (track._errRetries >= MAX_PLAY_RETRIES) {
+      track._err = true;
+      toast('Failed: ' + track.title);
+    }
   }
 });
 
@@ -848,12 +921,15 @@ function updateMediaSession() {
   const track = tracks[nowPlaying];
   if (!track) return;
 
-  // absolute URLs for artwork on iOS
+  const artSrc = track.art || 'icon.png';
+  const artUrl = new URL(artSrc, location.href).href;
+
+  // Build artwork list from cached blob if available
   const artworkList = [];
-  if (track.art) {
-    const artUrl = new URL(track.art, location.href).href;
-    const mimeType = track.art.endsWith('.png') ? 'image/png' : track.art.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
-    artworkList.push({ src: artUrl, sizes: '512x512', type: mimeType });
+  const cachedBlob = _artworkBlobs.get(artUrl);
+  if (cachedBlob) {
+    artworkList.push({ src: cachedBlob, sizes: '256x256', type: 'image/png' });
+    artworkList.push({ src: cachedBlob, sizes: '512x512', type: 'image/png' });
   }
 
   navigator.mediaSession.metadata = new MediaMetadata({
@@ -863,12 +939,46 @@ function updateMediaSession() {
     artwork: artworkList,
   });
 
-  // Always (re-)register action handlers — iOS can drop them on app resume
-  navigator.mediaSession.setActionHandler('play', () => { audio.play(); playing = true; updatePlayPauseButtons(); });
-  navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); playing = false; updatePlayPauseButtons(); });
+  // If no blob cached yet (and not previously failed), generate one and re-set metadata when ready
+  if (!_artworkBlobs.has(artUrl)) {
+    _generateArtworkBlob(artUrl, () => {
+      // Only re-set if this track is still playing
+      if (tracks[nowPlaying] === track) updateMediaSession();
+    });
+  }
+
+  // Set explicit playbackState, critical for keeping media session alive
+  // on car displays and lock screens when the app is in background
+  navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+
+  // Always (re-)register action handlers, iOS can drop them on app resume
+  // await play() before setting state in the play handler
+  navigator.mediaSession.setActionHandler('play', async () => {
+    try {
+      await audio.play();
+      playing = true;
+      navigator.mediaSession.playbackState = 'playing';
+    } catch {
+      // play failed (e.g. backgrounded too long)
+    }
+    updatePlayPauseButtons();
+  });
+  navigator.mediaSession.setActionHandler('pause', () => {
+    audio.pause();
+    playing = false;
+    navigator.mediaSession.playbackState = 'paused';
+    updatePlayPauseButtons();
+  });
   navigator.mediaSession.setActionHandler('previoustrack', previousTrack);
   navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
   navigator.mediaSession.setActionHandler('seekto', d => { audio.currentTime = d.seekTime; updatePositionState(); });
+  // Handle stop - some car head units send this instead of pause
+  try { navigator.mediaSession.setActionHandler('stop', () => {
+    audio.pause();
+    playing = false;
+    navigator.mediaSession.playbackState = 'paused';
+    updatePlayPauseButtons();
+  }); } catch {}
   // Explicitly clear seekbackward/seekforward so iOS doesn't override prev/next with ±10s
   try { navigator.mediaSession.setActionHandler('seekbackward', null); } catch {}
   try { navigator.mediaSession.setActionHandler('seekforward', null); } catch {}
@@ -885,6 +995,66 @@ function updatePositionState() {
       position: Math.min(audio.currentTime, audio.duration),
     });
   } catch {}
+}
+
+// Generate a blob URL from an artwork image via canvas.
+// Uses a Map cache so preloadNext doesn't clobber the current track's blob.
+// Optional callback fires when the blob is ready.
+const _artworkGenerating = new Map(); // artUrl -> [callbacks]
+
+function _generateArtworkBlob(artUrl, onReady) {
+  // Already cached (either valid blob URL or '' error sentinel)
+  if (_artworkBlobs.has(artUrl)) { if (onReady) onReady(); return; }
+
+  // Already generating so queue the callback instead of starting a duplicate
+  if (_artworkGenerating.has(artUrl)) {
+    if (onReady) _artworkGenerating.get(artUrl).push(onReady);
+    return;
+  }
+  _artworkGenerating.set(artUrl, onReady ? [onReady] : []);
+
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = artUrl;
+
+  function _finish() {
+    const cbs = _artworkGenerating.get(artUrl) || [];
+    _artworkGenerating.delete(artUrl);
+    cbs.forEach(cb => cb());
+  }
+
+  img.addEventListener('load', () => {
+    try {
+      const SIZE = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, SIZE, SIZE);
+      canvas.toBlob((blob) => {
+        if (!blob) { _finish(); return; }
+        const blobUrl = URL.createObjectURL(blob);
+        _artworkBlobs.set(artUrl, blobUrl);
+
+        // Evict oldest entries beyond the cache limit
+        if (_artworkBlobs.size > _ARTWORK_CACHE_MAX) {
+          const iter = _artworkBlobs.entries();
+          const oldest = iter.next().value;
+          if (oldest) {
+            URL.revokeObjectURL(oldest[1]);
+            _artworkBlobs.delete(oldest[0]);
+          }
+        }
+
+        _finish();
+      }, 'image/png');
+    } catch { _finish(); }
+  });
+  img.addEventListener('error', () => {
+    // Mark as attempted so we don't keep retrying a broken image
+    _artworkBlobs.set(artUrl, '');
+    _finish();
+  });
 }
 
 
@@ -977,7 +1147,7 @@ function handleSearch(query) {
   const shown = matches.slice(0, SEARCH_CAP);
   let html = '<div class="tl">' + shown.map(([_, i]) => renderTrackItem(i)).join('') + '</div>';
   if (matches.length > SEARCH_CAP) {
-    html += `<div class="empty" style="padding:12px"><p style="font-size:13px;color:var(--sub)">Showing ${SEARCH_CAP} of ${matches.length} results — try a more specific query</p></div>`;
+    html += `<div class="empty" style="padding:12px"><p style="font-size:13px;color:var(--sub)">Showing ${SEARCH_CAP} of ${matches.length} results - try a more specific query</p></div>`;
   }
   target.innerHTML = html;
 }
@@ -1002,7 +1172,7 @@ let cacheAbort = false;
 
 async function cacheCurrentView() {
   if (cacheBusy) {
-    // Already caching — tap again to cancel
+    // Already caching - tap again to cancel
     cacheAbort = true;
     toast('Cancelling...');
     return;
@@ -1253,8 +1423,23 @@ document.addEventListener('visibilitychange', () => {
         updateMediaSession();
       });
     }
+
+    // if audio stopped unexpectedly while backgrounded, try to resume.
+    // If play() fails, correct the state instead of silently lying.
+    if (playing && audio.paused) {
+      audio.play().catch(() => {
+        playing = false;
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+        updatePlayPauseButtons();
+      });
+    }
+
     updatePlayerUI();
     updateMediaSession();
+  } else if (document.visibilityState === 'hidden' && nowPlaying >= 0) {
+    // ensure media session is fresh so car display keeps showing it even when background
+    updateMediaSession();
+    saveState();
   }
 });
 
