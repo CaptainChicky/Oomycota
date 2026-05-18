@@ -920,12 +920,16 @@ button { font-family: inherit }
   inset: 0;
   z-index: 300;
   background: var(--bg);
-  display: none;
+  display: flex;
   flex-direction: column;
   padding: env(safe-area-inset-top, 16px) 16px var(--safe-b);
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s, visibility .15s;
 }
 
-.ms.open { display: flex }
+.ms.open { visibility: visible; opacity: 1; pointer-events: auto }
 
 .ms-bar {
   display: flex;
@@ -941,7 +945,7 @@ button { font-family: inherit }
   border: 1px solid var(--border);
   border-radius: var(--r);
   color: var(--text);
-  font-size: 14px;
+  font-size: 16px;
   padding: 10px 14px;
   font-family: inherit;
   outline: none;
