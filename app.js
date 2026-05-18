@@ -916,11 +916,28 @@ fullPlayerEl.addEventListener('touchend', event => {
 // --- Search ---
 
 function openMobileSearch() {
-  const overlay = document.getElementById('ms');
-  const input = document.getElementById('msi');
+  // iOS Safari only opens the keyboard when .focus() is called synchronously
+  // on a *visible* element during a user gesture. The real input is hidden
+  // (opacity:0) when the button is tapped, so iOS ignores the focus.
+  // Workaround: focus a tiny always-visible proxy input first (opens keyboard),
+  // then show the overlay and transfer focus to the real input.
+  var proxy = document.getElementById('iosProxy');
+  if (proxy) proxy.focus();
+  var overlay = document.getElementById('ms');
   overlay.classList.add('open');
-  input.focus();
+  var input = document.getElementById('msi');
+  requestAnimationFrame(function() { input.focus(); });
 }
+
+// Create the proxy input once on load
+(function() {
+  var p = document.createElement('input');
+  p.id = 'iosProxy';
+  p.setAttribute('aria-hidden', 'true');
+  p.setAttribute('tabindex', '-1');
+  p.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.01;border:none;padding:0;margin:0;outline:none;z-index:-1;pointer-events:none;';
+  document.body.appendChild(p);
+})();
 
 function closeMobileSearch() {
   document.getElementById('ms').classList.remove('open');

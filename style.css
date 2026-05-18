@@ -923,13 +923,12 @@ button { font-family: inherit }
   display: flex;
   flex-direction: column;
   padding: env(safe-area-inset-top, 16px) 16px var(--safe-b);
-  visibility: hidden;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .15s, visibility .15s;
+  transition: opacity .15s;
 }
 
-.ms.open { visibility: visible; opacity: 1; pointer-events: auto }
+.ms.open { opacity: 1; pointer-events: auto }
 
 .ms-bar {
   display: flex;
