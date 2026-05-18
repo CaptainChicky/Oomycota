@@ -107,12 +107,12 @@ button { font-family: inherit }
 .ib.on { border-color: var(--accent); color: var(--accent) }
 .ib.flat { border: none }
 
+.mob { display: none !important }
+
 @media (max-width: 600px) {
   .hd-search { display: none }
   .mob { display: inline-flex !important }
 }
-
-.mob { display: none !important }
 
 
 /* --- Playlist filter chips --- */
