@@ -576,7 +576,7 @@ audio.addEventListener('timeupdate', () => {
 });
 
 audio.addEventListener('ended', advance);
-audio.addEventListener('play', () => { playing = true; updatePlayPauseButtons(); updateHighlight(); updateQueuePlayButton(); });
+audio.addEventListener('play', () => { playing = true; updatePlayPauseButtons(); updateHighlight(); updateQueuePlayButton(); updateMediaSession(); });
 audio.addEventListener('pause', () => { playing = false; updatePlayPauseButtons(); updateHighlight(); updateQueuePlayButton(); });
 audio.addEventListener('error', () => {
   const track = tracks[nowPlaying];
