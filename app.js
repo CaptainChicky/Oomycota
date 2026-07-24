@@ -17,6 +17,7 @@ let repeatMode = 0;       // 0 = off, 1 = repeat all, 2 = repeat one
 let activeFilter = null;  // null = all, 'fav' = favorites, number = playlist index
 let seeking = false;
 let contextTrack = -1;    // track index for the open context menu
+let _hiddenAt = 0;        // timestamp the page last went hidden (0 = not hidden)
 
 const audio = document.getElementById('au');
 const favorites = new Set();
@@ -955,7 +956,20 @@ function updateMediaSession() {
   // await play() before setting state in the play handler
   navigator.mediaSession.setActionHandler('play', async () => {
     try {
-      await audio.play();
+      // If the element looks stale (backgrounded a while, low readyState,
+      // or duration lost), force a fresh load() at the saved position
+      // first -- automates the manual "pause then play" workaround.
+      const stale = (_hiddenAt && Date.now() - _hiddenAt > 30000) ||
+                    audio.readyState < 2 ||
+                    !audio.duration || !isFinite(audio.duration);
+      if (stale) await reloadAtPosition();
+
+      try {
+        await audio.play();
+      } catch {
+        audio.load();
+        await audio.play();
+      }
       playing = true;
       navigator.mediaSession.playbackState = 'playing';
     } catch {
@@ -997,6 +1011,31 @@ function updatePositionState() {
   } catch {}
 }
 
+// Force a fresh load() of the current track at its current position.
+// iOS can silently stall or purge decoder state on a backgrounded <audio>
+// element (bar keeps moving, no sound); this is the same fix as the manual
+// "pause then play" workaround, automated.
+function reloadAtPosition() {
+  return new Promise((resolve) => {
+    let pos = audio.currentTime;
+    if (!pos || !isFinite(pos)) {
+      try {
+        const st = JSON.parse(localStorage.getItem('oo_st') || '{}');
+        pos = st.p || 0;
+      } catch { pos = 0; }
+    }
+    audio.load();
+    audio.addEventListener('loadedmetadata', function onReload() {
+      audio.removeEventListener('loadedmetadata', onReload);
+      if (pos > 0 && isFinite(audio.duration) && pos < audio.duration) {
+        audio.currentTime = pos;
+      }
+      updateMediaSession();
+      resolve();
+    });
+  });
+}
+
 // Generate a blob URL from an artwork image via canvas.
 // Uses a Map cache so preloadNext doesn't clobber the current track's blob.
 // Optional callback fires when the blob is ready.
@@ -1015,9 +1054,27 @@ function _generateArtworkBlob(artUrl, onReady) {
 
   const img = new Image();
   img.crossOrigin = 'anonymous';
+
+  let settled = false;
+
+  // Decode/network can stall indefinitely on a throttled background tab
+  // (iOS Safari in the car). Clear the lock without an error sentinel so
+  // a later updateMediaSession() call can retry instead of being blocked
+  // for the rest of the session.
+  const timeoutId = setTimeout(() => {
+    if (settled) return;
+    settled = true;
+    const cbs = _artworkGenerating.get(artUrl) || [];
+    _artworkGenerating.delete(artUrl);
+    cbs.forEach(cb => cb());
+  }, 8000);
+
   img.src = artUrl;
 
   function _finish() {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeoutId);
     const cbs = _artworkGenerating.get(artUrl) || [];
     _artworkGenerating.delete(artUrl);
     cbs.forEach(cb => cb());
@@ -1030,7 +1087,11 @@ function _generateArtworkBlob(artUrl, onReady) {
       canvas.width = SIZE;
       canvas.height = SIZE;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, SIZE, SIZE);
+      // Center-crop to a square source region instead of stretching
+      const s = Math.min(img.naturalWidth, img.naturalHeight);
+      const sx = (img.naturalWidth - s) / 2;
+      const sy = (img.naturalHeight - s) / 2;
+      ctx.drawImage(img, sx, sy, s, s, 0, 0, SIZE, SIZE);
       canvas.toBlob((blob) => {
         if (!blob) { _finish(); return; }
         const blobUrl = URL.createObjectURL(blob);
@@ -1051,9 +1112,14 @@ function _generateArtworkBlob(artUrl, onReady) {
     } catch { _finish(); }
   });
   img.addEventListener('error', () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeoutId);
     // Mark as attempted so we don't keep retrying a broken image
     _artworkBlobs.set(artUrl, '');
-    _finish();
+    const cbs = _artworkGenerating.get(artUrl) || [];
+    _artworkGenerating.delete(artUrl);
+    cbs.forEach(cb => cb());
   });
 }
 
@@ -1404,39 +1470,37 @@ window.addEventListener('pagehide', saveState);
 // iOS PWA: re-sync UI when returning to the app
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && nowPlaying >= 0) {
-    // Re-kick metadata if duration was lost (iOS can purge audio state)
-    if (!audio.duration || !isFinite(audio.duration)) {
-      // Save position before load() resets it; fall back to localStorage
-      let pos = audio.currentTime;
-      if (!pos || !isFinite(pos)) {
-        try {
-          const st = JSON.parse(localStorage.getItem('oo_st') || '{}');
-          pos = st.p || 0;
-        } catch { pos = 0; }
+    const wasHiddenLong = _hiddenAt && Date.now() - _hiddenAt > 30000;
+    _hiddenAt = 0;
+
+    // Re-kick metadata if duration was lost (iOS can purge audio state),
+    // or force a fresh load() after a long background while playing --
+    // both are cases where the element can go silent while the car's
+    // progress bar keeps moving.
+    const needsReload = !audio.duration || !isFinite(audio.duration) ||
+                         (playing && wasHiddenLong);
+
+    const afterReload = () => {
+      // if audio stopped unexpectedly while backgrounded, try to resume.
+      // If play() fails, correct the state instead of silently lying.
+      if (playing && audio.paused) {
+        audio.play().catch(() => {
+          playing = false;
+          if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+          updatePlayPauseButtons();
+        });
       }
-      audio.load();
-      audio.addEventListener('loadedmetadata', function onResume() {
-        audio.removeEventListener('loadedmetadata', onResume);
-        if (pos > 0 && isFinite(audio.duration) && pos < audio.duration) {
-          audio.currentTime = pos;
-        }
-        updateMediaSession();
-      });
-    }
+      updatePlayerUI();
+      updateMediaSession();
+    };
 
-    // if audio stopped unexpectedly while backgrounded, try to resume.
-    // If play() fails, correct the state instead of silently lying.
-    if (playing && audio.paused) {
-      audio.play().catch(() => {
-        playing = false;
-        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
-        updatePlayPauseButtons();
-      });
+    if (needsReload) {
+      reloadAtPosition().then(afterReload);
+    } else {
+      afterReload();
     }
-
-    updatePlayerUI();
-    updateMediaSession();
   } else if (document.visibilityState === 'hidden' && nowPlaying >= 0) {
+    _hiddenAt = Date.now();
     // ensure media session is fresh so car display keeps showing it even when background
     updateMediaSession();
     saveState();

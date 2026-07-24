@@ -17,7 +17,6 @@ Usage:
 import json
 import os
 import sys
-import shutil
 import hashlib
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
@@ -30,6 +29,12 @@ try:
 except ImportError:
     HAS_MUTAGEN = False
 
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -39,6 +44,8 @@ MUSIC_EXTENSIONS = {'.mp3', '.m4a', '.webm', '.mp4'}
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
 MUSIC_DIR = 'music'
 COVERS_DIR = 'covers'
+COVER_SIZE = 512
+COVER_QUALITY = 85
 
 DEFAULT_ICONS = [
     '🎵', '🎸', '🎹', '🎷', '🎺', '🥁', '🎻', '🎤',
@@ -57,6 +64,41 @@ COLORS = {
     'text_muted':     '#888',
     'white':          '#fff',
 }
+
+
+# ---------------------------------------------------------------------------
+# Cover image processing
+# ---------------------------------------------------------------------------
+
+def process_cover_image(data):
+    """Center-crop image bytes to a square and downscale to COVER_SIZE.
+
+    Cars decode media-session artwork on a throttled background thread;
+    large/non-square source images (raw YouTube thumbnails, 1280x720+)
+    can fail to decode in time, so covers are normalized to a small
+    square JPEG. Returns (image_bytes, ext), falling back to the
+    original (data, None) if Pillow is missing or processing fails.
+    """
+    if not HAS_PIL:
+        return data, None
+    try:
+        import io
+        img = Image.open(io.BytesIO(data))
+        img.load()
+        img = img.convert('RGB')
+
+        w, h = img.size
+        side = min(w, h)
+        left = (w - side) // 2
+        top = (h - side) // 2
+        img = img.crop((left, top, left + side, top + side))
+        img = img.resize((COVER_SIZE, COVER_SIZE), Image.LANCZOS)
+
+        out = io.BytesIO()
+        img.save(out, format='JPEG', quality=COVER_QUALITY)
+        return out.getvalue(), '.jpg'
+    except Exception:
+        return data, None
 
 
 # ---------------------------------------------------------------------------
@@ -122,18 +164,21 @@ def extract_embedded_art(filepath, output_dir):
                 continue
 
             apic = tags[key]
-            ext = {
+            default_ext = {
                 'image/png':  '.png',
                 'image/webp': '.webp',
             }.get(apic.mime, '.jpg')
 
-            filename = hashlib.md5(apic.data).hexdigest()[:12] + ext
+            processed, processed_ext = process_cover_image(apic.data)
+            ext = processed_ext or default_ext
+
+            filename = hashlib.md5(processed).hexdigest()[:12] + ext
             out_path = os.path.join(output_dir, filename)
 
             if not os.path.exists(out_path):
                 os.makedirs(output_dir, exist_ok=True)
                 with open(out_path, 'wb') as f:
-                    f.write(apic.data)
+                    f.write(processed)
             return filename
     except Exception:
         pass
@@ -153,14 +198,17 @@ def copy_image_to_covers(src_path, root_dir):
     os.makedirs(covers_path, exist_ok=True)
 
     with open(src_path, 'rb') as f:
-        content_hash = hashlib.md5(f.read()).hexdigest()[:12]
+        raw = f.read()
 
-    ext = Path(src_path).suffix.lower()
+    processed, processed_ext = process_cover_image(raw)
+    ext = processed_ext or Path(src_path).suffix.lower()
+    content_hash = hashlib.md5(processed).hexdigest()[:12]
     filename = content_hash + ext
     dest = os.path.join(covers_path, filename)
 
     if not os.path.exists(dest):
-        shutil.copy2(src_path, dest)
+        with open(dest, 'wb') as f:
+            f.write(processed)
     return f'{COVERS_DIR}/{filename}'
 
 
