@@ -425,17 +425,34 @@ function togglePlayback() {
     return;
   }
   if (audio.paused) {
-    audio.play().catch(() => {
-      // If play fails (e.g. after long background), reload and try
-      audio.load();
-      audio.play().catch(() => {});
-    });
+    resumePlayback().catch(() => {});
     playing = true;
   } else {
     audio.pause();
     playing = false;
   }
   updatePlayerUI();
+}
+
+// Resume playback after a possible background gap. iOS Safari purges the
+// decode pipeline of an <audio> element that was paused while backgrounded --
+// play() then resolves and currentTime advances, but no sound comes out
+// (position snaps back on the next pause). reloadAtPosition() (a load() +
+// re-seek) is the fix; this decides when it's needed and shares that
+// decision between the in-app play button and the Media Session play handler.
+async function resumePlayback() {
+  const backgroundedMs = _hiddenAt ? Date.now() - _hiddenAt : 0;
+  const stale = backgroundedMs > 4000 ||
+                audio.readyState < 2 ||
+                !audio.duration || !isFinite(audio.duration);
+  if (stale) await reloadAtPosition();
+
+  try {
+    await audio.play();
+  } catch {
+    audio.load();
+    await audio.play();
+  }
 }
 
 function nextTrack() { advance(); }
@@ -963,20 +980,10 @@ function updateMediaSession() {
   // await play() before setting state in the play handler
   navigator.mediaSession.setActionHandler('play', async () => {
     try {
-      // If the element looks stale (backgrounded a while, low readyState,
-      // or duration lost), force a fresh load() at the saved position
-      // first -- automates the manual "pause then play" workaround.
-      const stale = (_hiddenAt && Date.now() - _hiddenAt > 30000) ||
-                    audio.readyState < 2 ||
-                    !audio.duration || !isFinite(audio.duration);
-      if (stale) await reloadAtPosition();
-
-      try {
-        await audio.play();
-      } catch {
-        audio.load();
-        await audio.play();
-      }
+      // resumePlayback() automates the manual "pause then play" workaround:
+      // reload-and-reseek if the element looks stale (backgrounded a while,
+      // low readyState, or duration lost), then play.
+      await resumePlayback();
       playing = true;
       navigator.mediaSession.playbackState = 'playing';
     } catch {
@@ -1031,15 +1038,30 @@ function reloadAtPosition() {
         pos = st.p || 0;
       } catch { pos = 0; }
     }
-    audio.load();
-    audio.addEventListener('loadedmetadata', function onReload() {
+
+    let settled = false;
+    function finish() {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
       audio.removeEventListener('loadedmetadata', onReload);
+      updateMediaSession();
+      resolve();
+    }
+    function onReload() {
       if (pos > 0 && isFinite(audio.duration) && pos < audio.duration) {
         audio.currentTime = pos;
       }
-      updateMediaSession();
-      resolve();
-    });
+      finish();
+    }
+
+    // loadedmetadata can stall indefinitely (dropped network, or the iOS
+    // 17.4+ regression where buffering events don't fire) -- never let a
+    // stuck reload hang the play gesture that's awaiting this promise.
+    const timeoutId = setTimeout(finish, 3000);
+
+    audio.load();
+    audio.addEventListener('loadedmetadata', onReload);
   });
 }
 
