@@ -22,11 +22,17 @@ let _hiddenAt = 0;        // timestamp the page last went hidden (0 = not hidden
 const audio = document.getElementById('au');
 const favorites = new Set();
 
-// Artwork blob cache: Map<resolvedArtUrl, blobUrl>
+// Artwork blob caches: Map<resolvedArtUrl, blobUrl>
 // Keeps blob URLs alive so the media session can always fetch them.
 // Max 3 entries (current + next + one stale) to avoid memory leaks.
-const _artworkBlobs = new Map();
+// Two sizes are generated: iOS Safari (pre-18) shows a grey box in the
+// mini/lock-screen player if the only artwork entry is a large image, so
+// a real small image is required alongside the 512x512 one.
+const _artworkBlobs = new Map();       // 512x512
+const _artworkBlobsSmall = new Map();  // 96x96
 const _ARTWORK_CACHE_MAX = 3;
+const ARTWORK_LARGE = 512;
+const ARTWORK_SMALL = 96;
 
 // Restore saved favorites
 try {
@@ -925,13 +931,14 @@ function updateMediaSession() {
   const artSrc = track.art || 'icon.png';
   const artUrl = new URL(artSrc, location.href).href;
 
-  // Build artwork list from cached blob if available
+  // Build artwork list from cached blobs if available. Real small + large
+  // images are both included -- iOS Safari (pre-18) shows a grey box in
+  // the mini/lock-screen player if only a large image is provided.
   const artworkList = [];
-  const cachedBlob = _artworkBlobs.get(artUrl);
-  if (cachedBlob) {
-    artworkList.push({ src: cachedBlob, sizes: '256x256', type: 'image/png' });
-    artworkList.push({ src: cachedBlob, sizes: '512x512', type: 'image/png' });
-  }
+  const smallBlob = _artworkBlobsSmall.get(artUrl);
+  const largeBlob = _artworkBlobs.get(artUrl);
+  if (smallBlob) artworkList.push({ src: smallBlob, sizes: `${ARTWORK_SMALL}x${ARTWORK_SMALL}`, type: 'image/png' });
+  if (largeBlob) artworkList.push({ src: largeBlob, sizes: `${ARTWORK_LARGE}x${ARTWORK_LARGE}`, type: 'image/png' });
 
   navigator.mediaSession.metadata = new MediaMetadata({
     title: track.title,
@@ -1080,36 +1087,43 @@ function _generateArtworkBlob(artUrl, onReady) {
     cbs.forEach(cb => cb());
   }
 
-  img.addEventListener('load', () => {
+  function _evictOldest(cache) {
+    if (cache.size <= _ARTWORK_CACHE_MAX) return;
+    const iter = cache.entries();
+    const oldest = iter.next().value;
+    if (oldest) {
+      if (oldest[1]) URL.revokeObjectURL(oldest[1]);
+      cache.delete(oldest[0]);
+    }
+  }
+
+  function _makeBlob(size, cache, sx, sy, s, onDone) {
     try {
-      const SIZE = 512;
       const canvas = document.createElement('canvas');
-      canvas.width = SIZE;
-      canvas.height = SIZE;
+      canvas.width = size;
+      canvas.height = size;
       const ctx = canvas.getContext('2d');
-      // Center-crop to a square source region instead of stretching
-      const s = Math.min(img.naturalWidth, img.naturalHeight);
-      const sx = (img.naturalWidth - s) / 2;
-      const sy = (img.naturalHeight - s) / 2;
-      ctx.drawImage(img, sx, sy, s, s, 0, 0, SIZE, SIZE);
+      ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
       canvas.toBlob((blob) => {
-        if (!blob) { _finish(); return; }
-        const blobUrl = URL.createObjectURL(blob);
-        _artworkBlobs.set(artUrl, blobUrl);
-
-        // Evict oldest entries beyond the cache limit
-        if (_artworkBlobs.size > _ARTWORK_CACHE_MAX) {
-          const iter = _artworkBlobs.entries();
-          const oldest = iter.next().value;
-          if (oldest) {
-            URL.revokeObjectURL(oldest[1]);
-            _artworkBlobs.delete(oldest[0]);
-          }
+        if (blob) {
+          cache.set(artUrl, URL.createObjectURL(blob));
+          _evictOldest(cache);
         }
-
-        _finish();
+        onDone();
       }, 'image/png');
-    } catch { _finish(); }
+    } catch { onDone(); }
+  }
+
+  img.addEventListener('load', () => {
+    // Center-crop to a square source region instead of stretching
+    const s = Math.min(img.naturalWidth, img.naturalHeight);
+    const sx = (img.naturalWidth - s) / 2;
+    const sy = (img.naturalHeight - s) / 2;
+
+    let pending = 2;
+    const onDone = () => { if (--pending === 0) _finish(); };
+    _makeBlob(ARTWORK_LARGE, _artworkBlobs, sx, sy, s, onDone);
+    _makeBlob(ARTWORK_SMALL, _artworkBlobsSmall, sx, sy, s, onDone);
   });
   img.addEventListener('error', () => {
     if (settled) return;
@@ -1117,6 +1131,7 @@ function _generateArtworkBlob(artUrl, onReady) {
     clearTimeout(timeoutId);
     // Mark as attempted so we don't keep retrying a broken image
     _artworkBlobs.set(artUrl, '');
+    _artworkBlobsSmall.set(artUrl, '');
     const cbs = _artworkGenerating.get(artUrl) || [];
     _artworkGenerating.delete(artUrl);
     cbs.forEach(cb => cb());
